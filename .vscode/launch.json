@@ -1,0 +1,21 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Sample",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "type": "node",
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "args": ["${workspaceRoot}/sample/sample.ts"]
+    },
+    {
+      "name": "Test-run",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "type": "node",
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "args": ["${workspaceRoot}/sample/test-run.ts"]
+    }
+  ]
+}

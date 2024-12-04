@@ -1,0 +1,44 @@
+{
+  "root": true,
+  "ignorePatterns": ["bin/**/*"],
+  "overrides": [
+    {
+      "files": ["*.ts"],
+      "extends": [
+        "plugin:@typescript-eslint/recommended",
+        "plugin:prettier/recommended" // Enables eslint-plugin-prettier and eslint-config-prettier. This will display prettier errors as ESLint errors. Make sure this is always the last configuration in the extends array.
+      ],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": ["tsconfig.json"],
+        "createDefaultProgram": true
+      },
+      "plugins": ["@typescript-eslint"],
+      "rules": {
+        "prettier/prettier": [
+          "warn",
+          {
+            "endOfLine": "auto",
+            "printWidth": 150
+          }
+        ],
+        "@typescript-eslint/no-unused-vars": [
+          "off"
+          // {
+          //   "args": "warn",
+          //   "caughtErrors": "all",
+          //   "caughtErrorsIgnorePattern": "^ignore",
+          //   "ignoreRestSiblings": true,
+          //   "varsIgnorePattern": "^ignore"
+          // }
+        ],
+        "@typescript-eslint/no-unused-expressions": [
+          "off",
+          {
+            "allowTaggedTemplates": true
+          }
+        ]
+      }
+    }
+  ]
+}
