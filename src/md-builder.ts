@@ -15,6 +15,8 @@ export namespace MdBuilder {
     superscript: string;
     /** Block quote marker "> " | ">" */
     blockquote: string;
+    /** footnote sub-paragraph indentation "    " | "\t" */
+    footnoteIndent: string;
     /** Inline code marker "`" */
     code: string;
     /** Code Block marker { indent: "    " } | { fence: "```" } | { fence: "~~~" } */
@@ -48,8 +50,10 @@ export namespace MdBuilder {
     smartEscape: boolean;
     /** set to false to escape all RFC2396 non-standard characters in URL-s (smartUrlEscape mode only escapes the ( ) " characters, otherwise encodeURI is applied ) */
     smartUrlEscape: boolean;
-    /** Add missing Reference and LinkReference elements to the end of the document */
-    autoReferences: true;
+    /** Add missing Footnote and linkUrl elements to the end of the document */
+    autoReferences: boolean;
+    /** Deduplicate Footnote and linkUrl elements (ignore if included a multiple times) */
+    dedupReferences: boolean;
     /** Link reference strictness. false - do not check, true - verify that all the References are included in the document, "strict" - also verify that ReferenceLinks are unique (the same MD Object was not included twice. It will still allow two with the same href) */
     checkReferences: boolean | "strict";
 
@@ -57,15 +61,26 @@ export namespace MdBuilder {
     headingLevel: number;
     /** Root list level (1) */
     listLevel: number;
-    /** Reference number to start numbering [Markdown link][1] referenced link from */
-    referencedLinkSeq: number;
 
-    /** we are caching the reference numbers in the context (not storing it in a member variable) to keep LinkReference stateless. One might try generating multiple documents from prebuilt paragraphs, stateful ELemnts would be a mess... */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    _referenceCache?: Map<LinkReference<any, any>, { refNumber: number; referenced: number; included: number }>;
+    _state: {
+      /** Reference number to start numbering [Markdown link][1] referenced link from */
+      referencedLinkSeq: number;
+      /** Reference number to start numbering [Markdown link][1] referenced link from */
+      footnoteSeq: number;
+
+      /** we are caching the link reference numbers in the context (not storing it in a member variable) to keep LinkUrl stateless. One might try generating multiple documents from prebuilt paragraphs, stateful Elemnts would be a mess... */
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _linkUrlCache: Map<LinkUrl<any, any>, { refNumber: number; referenced: number; included: number }>;
+      /** we are caching the footnote reference numbers in the context (not storing it in a member variable) to keep Footnote stateless. One might try generating multiple documents from prebuilt paragraphs, stateful Elemnts would be a mess... */
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _footnoteRefCache: Map<Footnote<any, any>, { refId: string | number; referenced: number; included: number }>;
+    };
   };
 
-  export const defaultOptions: Context = {
+  export type ToStringOptions<C extends Context = Context> = Omit<C, keyof Context> & Partial<Pick<C, keyof Context>>;
+  export type ErrorHandler<T> = (output: string, errors: ErrorInfo[]) => T;
+
+  const _defaultOptions: Omit<Context, "headingLevel" | "listLevel" | "_state"> = {
     hr: "---",
     bold: "**",
     italic: "*",
@@ -73,6 +88,7 @@ export namespace MdBuilder {
     subscript: "~",
     superscript: "^",
     blockquote: "> ",
+    footnoteIndent: "    ",
     code: "`",
     codeblock: { fence: "```" },
     nl: "  \n",
@@ -81,12 +97,23 @@ export namespace MdBuilder {
     smartEscape: true,
     smartUrlEscape: true,
     autoReferences: true,
+    dedupReferences: false,
     checkReferences: "strict",
-
-    headingLevel: 1,
-    listLevel: 1,
-    referencedLinkSeq: 1,
   };
+
+  export function getDefaultContext(): Context {
+    return {
+      ..._defaultOptions,
+      headingLevel: 1,
+      listLevel: 1,
+      _state: {
+        referencedLinkSeq: 1,
+        footnoteSeq: 1,
+        _footnoteRefCache: new Map(),
+        _linkUrlCache: new Map(),
+      },
+    };
+  }
 
   export abstract class ExtensibleMd<T, C extends Context & Record<string, unknown>> {
     static _templateToArray<V>(template: string | TemplateStringsArray, values: V[]) {
@@ -131,9 +158,9 @@ export namespace MdBuilder {
       return new Section<T, C>(heading, content);
     }
 
-    // h(title: string): Heading<T, C>; - Would be nice, but would allow md.h(`${md.b("Title")`) by accident, which passes the evaluated string, not the TemplateString, causing troubles with custom Options and LinkRefertences
+    // h(title: string): Heading<T, C>; - Would be nice, but would allow md.h(`${md.b("Title")`) by accident, which passes the evaluated string, not the TemplateString, causing troubles with custom Options and linkUrl-s
     /** Create a heading with automatically determined level from the document structure (nested sections) */
-    h(title: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    h(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Heading<T, C>(this, undefined, ExtensibleMd._templateToArray(title, values));
     }
 
@@ -143,61 +170,61 @@ export namespace MdBuilder {
     }
 
     /** Heading 1 */
-    h1(title: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    h1(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Heading<T, C>(this, 1, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 2 */
-    h2(title: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    h2(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Heading<T, C>(this, 2, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 3 */
-    h3(title: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    h3(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Heading<T, C>(this, 3, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 4 */
-    h4(title: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    h4(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Heading<T, C>(this, 4, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 5 */
-    h5(title: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    h5(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Heading<T, C>(this, 5, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 6 */
-    h6(title: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    h6(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Heading<T, C>(this, 6, ExtensibleMd._templateToArray(title, values));
     }
 
     /** Paragraph */
-    p(content: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    p(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Paragraph<T, C>(this, ExtensibleMd._templateToArray(content, values));
     }
 
     /** Normal text (no formatting) */
-    t(content: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    t(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values));
     }
     /** Bold */
-    b(content: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    b(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "bold");
     }
 
     /** Italic */
-    i(content: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    i(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "italic");
     }
 
     /** Strike-through */
-    s(content: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    s(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "strikethrough");
     }
 
     /** Superscript */
-    sup(content: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    sup(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "superscript");
     }
 
     /** Subscript */
-    sub(content: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    sub(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "subscript");
     }
 
@@ -206,17 +233,30 @@ export namespace MdBuilder {
       return new Code<T, C>(this, ExtensibleMd._templateToArray(codeStr, _never).join(""));
     }
 
-    /** Use href="http://url" for normal links, href = "#headingId" for intra-page link or href = md.linkRef(...) for reference-style links */
-    link(text: string | InlineElement<C> | T, href: string, title: string): Link<T, C>;
-    link(text: string | InlineElement<C> | T, linkRef: LinkReference): Link<T, C>;
-    link(text: string | InlineElement<C> | T, hrefOrLinkRef: string | LinkReference, title?: string): Link<T, C>;
-    link(text: string | InlineElement<C> | T, hrefOrLinkRef: string | LinkReference, title?: string) {
-      return new Link<T, C>(this, text, hrefOrLinkRef, title);
+    /** Use href="http://url" for normal links, href = "#headingId" for intra-page link or href = md.linkUrl(...) for reference-style links */
+    link(text: string | InlineElement<C> | RawElement<C> | T, href: string, title: string): Link<T, C>;
+    link(text: string | InlineElement<C> | RawElement<C> | T, linkUrl: LinkUrl): Link<T, C>;
+    link(text: string | InlineElement<C> | RawElement<C> | T, hrefOrLinkUrl: string | LinkUrl, title?: string): Link<T, C>;
+    link(text: string | InlineElement<C> | RawElement<C> | T, hrefOrLinkUrl: string | LinkUrl, title?: string) {
+      return new Link<T, C>(this, text, hrefOrLinkUrl, title);
     }
 
     /** A link reference to be used in a reference-style md.link() */
-    linkRef(href: string, title: string) {
-      return new LinkReference<T, C>(this, href, title);
+    linkUrl(href: string, title: string) {
+      return new LinkUrl<T, C>(this, href, title);
+    }
+
+    footnote(...content: (BlockElement | string | InlineElement<C>)[]): Footnote<T, C>;
+    footnote(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]): Footnote<T, C>;
+    footnote(
+      content: (BlockElement | string | InlineElement<C>) | TemplateStringsArray,
+      ...values: (BlockElement | string | InlineElement<C> | RawElement<C> | T)[]
+    ) {
+      if (typeof content === "string" || content instanceof InlineElement || content instanceof BlockElement) {
+        return new Footnote<T, C>(this, [content, ...values]);
+      } else {
+        return new Footnote<T, C>(this, ExtensibleMd._templateToArray(content, values));
+      }
     }
 
     /** Simple url or e-mail address, the visible text is the same as the link url. For more control, use md.link(name, href, title?) */
@@ -226,7 +266,7 @@ export namespace MdBuilder {
 
     /** Custom html or markdown to add without any escaping */
     raw(rawContent: string | TemplateStringsArray, ..._never: never[]) {
-      return new Raw<T, C>(this, ExtensibleMd._templateToArray(rawContent, _never).join(""));
+      return new RawElement<T, C>(this, ExtensibleMd._templateToArray(rawContent, _never).join(""));
     }
 
     /** Horizontal Rule */
@@ -236,13 +276,13 @@ export namespace MdBuilder {
 
     /** Block quote: "> Some quoted text..." */
     blockquote(...content: (BlockElement | string | InlineElement<C>)[]): Blockquote<T, C>;
-    blockquote(content: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]): Blockquote<T, C>;
+    blockquote(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]): Blockquote<T, C>;
     blockquote(
       content: (BlockElement | string | InlineElement<C>) | TemplateStringsArray,
-      ...values: (BlockElement | string | InlineElement<C> | T)[]
+      ...values: (BlockElement | string | InlineElement<C> | RawElement<C> | T)[]
     ) {
       if (typeof content === "string" || content instanceof InlineElement || content instanceof BlockElement) {
-        return new Blockquote<T, C>(this, [content]);
+        return new Blockquote<T, C>(this, [content, ...values]);
       } else {
         return new Blockquote<T, C>(this, ExtensibleMd._templateToArray(content, values));
       }
@@ -259,16 +299,16 @@ export namespace MdBuilder {
     }
 
     /** Unordered list (a list with bullet points, without numbering) */
-    list(items: (string | InlineElement<C> | T | BlockElement<C>)[] = []) {
+    list(items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[] = []) {
       return new List<T, C>(this, items);
     }
 
     /** Ordered list (a list with numbering) */
-    ordered(items: (string | InlineElement<C> | T | BlockElement<C>)[]) {
+    ordered(items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[]) {
       return new List<T, C>(this, items, 1);
     }
     /** Ordered list (a list with numbering starting from the specified value) */
-    orderedFrom(start: number, items: (string | InlineElement<C> | T | BlockElement<C>)[]) {
+    orderedFrom(start: number, items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[]) {
       return new List<T, C>(this, items, start);
     }
   }
@@ -285,12 +325,18 @@ export namespace MdBuilder {
   }
 
   export enum ErrorType {
-    /** a LinkReference is missing from the document, but referenced by a reference style Link */
+    /** Link url of a reference-style link is missing from the document, but referenced by a Link */
     LINK_REFERENCE_MISSING = "LINK_REFERENCE_MISSING",
-    /** a LinkReference is included multiple times in the document */
+    /** Link url of a reference-style link is included multiple times in the document */
     LINK_REFERENCE_DUPLICATE = "LINK_REFERENCE_DUPLICATE",
-    /** a LinkReference was included in the document, but there are not reference-style Link-s to it */
+    /** Link url of a reference-style link is included in the document, but not referenced by any links */
     LINK_REFERENCE_NOT_USED = "LINK_REFERENCE_NOT_USED",
+    /** Footnote of a reference is missing from the document */
+    FOOTNOTE_MISSING = "FOOTNOTE_MISSING",
+    /** Footnote of a reference is included multiple times in the document */
+    FOOTNOTE_DUPLICATE = "FOOTNOTE_DUPLICATE",
+    /** Footnote is included in the document, but not referenced */
+    FOOTNOTE_NOT_USED = "FOOTNOTE_NOT_USED",
   }
   export type ErrorInfo = {
     message: string;
@@ -300,8 +346,8 @@ export namespace MdBuilder {
 
   export abstract class Element<C extends Context = Context> {
     protected static _escapeText(text: string, context: Pick<Context, "smartEscape" | "nl">) {
-      const escaped = context.smartEscape ? text.replace(/([\\*_`[\]{}<>]|(?<=~)~)/g, "\\$1") : text.replace(/([\\*_`|[\]{}<>~#+\-.!])/g, "\\$1");
-      return escaped.replace(/\n/g, context.nl);
+      const escaped = context.smartEscape ? text.replace(/([\\*_`[\]{}<>]|~)/g, "\\$1") : text.replace(/([\\*_`|[\]{}<>~#+\-.!])/g, "\\$1");
+      return escaped.replace(/\n/g, context.nl).replace(/(^|\n)  (?=\n)/g, "$1\\"); // empty lines doesn't do very well with double-space NL escaping
     }
 
     protected static _escapeTitle(title: string, context: Pick<Context, "smartEscape" | "nl">) {
@@ -316,67 +362,91 @@ export namespace MdBuilder {
     }
 
     toString: Context extends C
-      ? <T = never>(
-          context?: Omit<C, keyof Context> & Partial<Pick<C, keyof Context>>,
-          onErrors?: (output: string, errors: ErrorInfo[]) => T
-        ) => string | T
-      : <T = never>(
-          context: Omit<C, keyof Context> & Partial<Pick<C, keyof Context>>,
-          onErrors?: (output: string, errors: ErrorInfo[]) => T
-        ) => string | T = <T = never>(
-      context: Omit<C, keyof Context> & Partial<Pick<C, keyof Context>> = {} as Omit<C, keyof Context> & Partial<Pick<C, keyof Context>>,
-      onErrors?: (output: string, errors: ErrorInfo[]) => T
+      ? <T = never>(context?: ToStringOptions<C>, onErrors?: ErrorHandler<T>) => string | T
+      : <T = never>(context: ToStringOptions<C>, onErrors?: ErrorHandler<T>) => string | T = <T = never>(
+      context: ToStringOptions<C> = {} as ToStringOptions<C>,
+      onErrors?: ErrorHandler<T>
     ) => {
-      const _context = Object.entries(context).reduce(
-        (o, [k, v]) => {
-          if (v !== undefined) {
-            (o as Record<string, unknown>)[k] = v;
-          }
-          return o;
-        },
-        { ...defaultOptions }
-      ) as C;
-
-      _context._referenceCache = new Map();
+      const _context = Object.entries(context).reduce((o, [k, v]) => {
+        if (v !== undefined) {
+          (o as Record<string, unknown>)[k] = v;
+        }
+        return o;
+      }, getDefaultContext()) as C;
 
       let output = this._toString(_context, undefined);
+      if (this instanceof InlineElement && _context.smartEscape) {
+        output = Paragraph.smartEscape(output, _context);
+      }
 
-      if (_context.autoReferences && _context._referenceCache) {
-        for (const [link, entry] of _context._referenceCache) {
+      if (_context.autoReferences) {
+        for (const [link, entry] of _context._state._linkUrlCache) {
+          if (entry.referenced && !entry.included) {
+            output += Element.__toString(link, _context, undefined);
+          }
+        }
+        for (const [link, entry] of _context._state._footnoteRefCache) {
           if (entry.referenced && !entry.included) {
             output += Element.__toString(link, _context, undefined);
           }
         }
       }
-      if (_context.checkReferences && _context._referenceCache) {
-        const errors: ErrorInfo[] = [];
-        for (const [link, entry] of _context._referenceCache) {
+      const errors: ErrorInfo[] = [];
+      if (_context.checkReferences) {
+        for (const [linkData, entry] of _context._state._linkUrlCache) {
           if (entry.referenced && !entry.included) {
             errors.push({
-              message: "Link reference missing: " + link.describe(_context),
+              message: "Link url missing: " + linkData._describe(_context),
               errorType: ErrorType.LINK_REFERENCE_MISSING,
-              element: link,
+              element: linkData,
             });
           } else if (entry.included && !entry.referenced && _context.checkReferences === "strict") {
-            errors.push({ message: "Reference not used: " + link.describe(_context), errorType: ErrorType.LINK_REFERENCE_NOT_USED, element: link });
+            errors.push({
+              message: "Link url not used: " + linkData._describe(_context),
+              errorType: ErrorType.LINK_REFERENCE_NOT_USED,
+              element: linkData,
+            });
           } else if (entry.included > 1 && _context.checkReferences === "strict") {
             errors.push({
-              message: "Link reference duplicated: " + link.describe(_context),
+              message: "Link url duplicated: " + linkData._describe(_context),
               errorType: ErrorType.LINK_REFERENCE_DUPLICATE,
-              element: link,
+              element: linkData,
             });
           }
         }
-        if (errors.length) {
-          if (onErrors) {
-            return onErrors(output, errors);
-          } else {
-            throw new Error(
-              `MdBuilder - errors during serialization (checkReferences:${JSON.stringify(
-                _context.checkReferences
-              )} and no .toString(..., onError:()=>{}) handler was specified):\n` + errors.map((link) => "- " + link.message).join("\n")
-            );
+      }
+      if (_context.checkReferences) {
+        for (const [footnote, entry] of _context._state._footnoteRefCache) {
+          if (entry.referenced && !entry.included) {
+            errors.push({
+              message: "Footnote missing: " + footnote.describe(_context),
+              errorType: ErrorType.FOOTNOTE_MISSING,
+              element: footnote,
+            });
+          } else if (entry.included && !entry.referenced && _context.checkReferences === "strict") {
+            errors.push({
+              message: "Footnote not used: " + footnote.describe(_context),
+              errorType: ErrorType.FOOTNOTE_NOT_USED,
+              element: footnote,
+            });
+          } else if (entry.included > 1 && _context.checkReferences === "strict") {
+            errors.push({
+              message: "Footnote duplicated: " + footnote.describe(_context),
+              errorType: ErrorType.FOOTNOTE_DUPLICATE,
+              element: footnote,
+            });
           }
+        }
+      }
+      if (errors.length) {
+        if (onErrors) {
+          return onErrors(output, errors);
+        } else {
+          throw new Error(
+            `MdBuilder - errors during serialization (checkReferences:${JSON.stringify(
+              _context.checkReferences
+            )} and no .toString(..., onError:()=>{}) handler was specified):\n` + errors.map((link) => "- " + link.message).join("\n")
+          );
         }
       }
       return output;
@@ -401,6 +471,21 @@ export namespace MdBuilder {
   /** InlineElement and BlockElement has no properties, thus duck typing would consider them interchangeable, allowing calls like md.section(md.h`Title`, md.t`This should be a block, not text!`) */
   export const typeduckSymbol = Symbol("typeduc");
 
+  export class RawElement<T = never, C extends Context = Context> extends Element<C> {
+    constructor(readonly md: ExtensibleMd<T, C>, public rawContent: string) {
+      super();
+    }
+
+    concat(rawContent: string | TemplateStringsArray, ..._never: never[]) {
+      this.rawContent += ExtensibleMd._templateToArray(rawContent, _never).join("");
+      return this;
+    }
+
+    _toString(context: C, peekLength: number | undefined) {
+      return this.rawContent;
+    }
+  }
+
   // ======================= Inline elements ===========================
 
   /** An inline element, like plain/blod/italic text or link */
@@ -409,7 +494,7 @@ export namespace MdBuilder {
 
     protected static _bracketMark<T, C extends Context>(
       md: ExtensibleMd<T, C>,
-      content: string | InlineElement<C> | T | (string | InlineElement<C> | T)[],
+      content: string | InlineElement<C> | RawElement<C> | T | (string | InlineElement<C> | RawElement<C> | T)[],
       context: C,
       mark: string,
       peekLength: number | undefined
@@ -438,7 +523,7 @@ export namespace MdBuilder {
 
     static _toString<T, C extends Context>(
       md: ExtensibleMd<T, C>,
-      content: string | InlineElement<C> | T | (string | InlineElement<C> | T)[],
+      content: string | InlineElement<C> | RawElement<C> | T | (string | InlineElement<C> | RawElement<C> | T)[],
       context: C,
       peekLength: number | undefined
     ): string {
@@ -474,6 +559,8 @@ export namespace MdBuilder {
           )
           .join("");
       } else if (content instanceof InlineElement) {
+        return content._toString(context, peekLength);
+      } else if (content instanceof RawElement) {
         return content._toString(context, peekLength);
       } else {
         return ExtensibleMd._toString(md, content, context, peekLength);
@@ -515,21 +602,36 @@ export namespace MdBuilder {
     }
   }
 
+  export class FootnoteReference<T = never, C extends Context = Context> extends InlineElement<C> {
+    constructor(readonly footnote: Footnote<T, C>) {
+      super();
+    }
+    protected _toString(context: C, peekLength: number | undefined): string {
+      return `[^${this.footnote.getRefId(context, { referenced: peekLength === undefined })}]`;
+    }
+  }
+
   export class Link<T = never, C extends Context = Context> extends InlineElement<C> {
     // TODO consider smartEscape not to escape [ ], except when the output can actually be misinterpreted as a link/link reference. But might cause more confusion than it's benefits.
-    constructor(md: ExtensibleMd<T, C>, text: string | InlineElement<C> | T, href: string, title?: string, isImage?: boolean);
-    constructor(md: ExtensibleMd<T, C>, text: string | InlineElement<C> | T, reference: LinkReference, unused?: undefined, isImage?: boolean);
+    constructor(md: ExtensibleMd<T, C>, text: string | InlineElement<C> | RawElement<C> | T, href: string, title?: string, isImage?: boolean);
     constructor(
       md: ExtensibleMd<T, C>,
-      text: string | InlineElement<C> | T,
-      hrefOrLinkRef: string | LinkReference,
+      text: string | InlineElement<C> | RawElement<C> | T,
+      reference: LinkUrl,
+      unused?: undefined,
+      isImage?: boolean
+    );
+    constructor(
+      md: ExtensibleMd<T, C>,
+      text: string | InlineElement<C> | RawElement<C> | T,
+      hrefOrLinkUrl: string | LinkUrl,
       title?: string,
       isImage?: boolean
     );
     constructor(
       readonly md: ExtensibleMd<T, C>,
-      readonly text: string | InlineElement<C> | T,
-      readonly hrefOrLinkRef: string | LinkReference,
+      readonly text: string | InlineElement<C> | RawElement<C> | T,
+      readonly hrefOrLinkUrl: string | LinkUrl,
       readonly title?: string,
       readonly isImage?: boolean
     ) {
@@ -548,10 +650,10 @@ export namespace MdBuilder {
         Element._peekPiece(
           peekLength,
           () => {
-            if (this.hrefOrLinkRef instanceof LinkReference) {
-              return `[${this.hrefOrLinkRef.getRefNumber(context, peekLength === undefined)}]`;
+            if (this.hrefOrLinkUrl instanceof LinkUrl) {
+              return `[${this.hrefOrLinkUrl.getRefNumber(context, { referenced: peekLength === undefined })}]`;
             } else {
-              return `(${InlineElement._escapeUrl(this.hrefOrLinkRef, context, "(")}${
+              return `(${InlineElement._escapeUrl(this.hrefOrLinkUrl, context, "(")}${
                 this.title ? ` "${Element._escapeTitle(this.title, context)}"` : ""
               })`;
             }
@@ -562,31 +664,16 @@ export namespace MdBuilder {
     }
   }
 
-  export class Raw<T = never, C extends Context = Context> extends InlineElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, public rawContent: string) {
-      super();
-    }
-
-    concat(rawContent: string | TemplateStringsArray, ..._never: never[]) {
-      this.rawContent += ExtensibleMd._templateToArray(rawContent, _never).join("");
-      return this;
-    }
-
-    protected _toString(context: C, peekLength: number | undefined) {
-      return this.rawContent;
-    }
-  }
-
   export class Text<T = never, C extends Context = Context> extends InlineElement<C> {
     constructor(
       readonly md: ExtensibleMd<T, C>,
-      readonly content: (string | InlineElement<C> | T)[],
+      readonly content: (string | InlineElement<C> | RawElement<C> | T)[],
       readonly emphasis?: keyof Pick<Context, "bold" | "italic" | "strikethrough" | "superscript" | "subscript">
     ) {
       super();
     }
 
-    concat(content: TemplateStringsArray, ...values: (string | InlineElement<C> | T)[]) {
+    concat(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       this.content.push(...ExtensibleMd._templateToArray(content, values));
       return this;
     }
@@ -616,23 +703,10 @@ export namespace MdBuilder {
     protected static _toString<C extends Context>(item: BlockElement<C>, context: C, peekLength: number | undefined) {
       return item._toString(context, peekLength);
     }
-  }
-
-  export class Blockquote<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (BlockElement<C> | string | InlineElement<C> | T)[]) {
-      super();
-    }
-
-    push(...content: (BlockElement<C> | string | InlineElement<C> | T)[]) {
-      this.content.push(...content);
-      return this;
-    }
-
-    protected _toString(context: C, peekLength: number | undefined): string {
-      const blockquote = context.blockquote;
-      let inlines: (string | InlineElement<C> | T)[] = [];
+    protected static _groupElements<C extends Context, T>(content: (string | T | InlineElement<C> | BlockElement<C>)[]) {
+      let inlines: (string | InlineElement<C> | RawElement<C> | T)[] = [];
       const blocks: (BlockElement<C> | typeof inlines)[] = [];
-      this.content.forEach((item) => {
+      content.forEach((item) => {
         if (item instanceof BlockElement) {
           if (inlines.length) blocks.push(inlines);
           inlines = [];
@@ -642,10 +716,34 @@ export namespace MdBuilder {
         }
       });
       if (inlines.length) blocks.push(inlines);
+      return blocks;
+    }
+  }
+
+  export class Blockquote<T = never, C extends Context = Context> extends BlockElement<C> {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (BlockElement<C> | string | InlineElement<C> | RawElement<C> | T)[]) {
+      super();
+    }
+
+    push(...content: (BlockElement<C> | string | InlineElement<C> | RawElement<C> | T)[]) {
+      this.content.push(...content);
+      return this;
+    }
+
+    protected _toString(context: C, peekLength: number | undefined): string {
+      const blockquote = context.blockquote;
+      const blocks = BlockElement._groupElements(this.content);
       return blocks
-        .map((block) => {
+        .map((block, index) => {
           if (block instanceof BlockElement) {
-            return BlockElement._toString(block, context, peekLength).replace(/\n/g, "\n" + blockquote);
+            return (
+              Element._peekPiece(peekLength, index === 0 ? "" : blockquote, (remaining) => (peekLength = remaining)) +
+              Element._peekPiece(
+                peekLength,
+                () => BlockElement._toString(block, context, peekLength).replace(/\n(?!$)/g, "\n" + blockquote),
+                (remaining) => (peekLength = remaining)
+              )
+            );
           } else {
             return (
               Element._peekPiece(peekLength, "\n" + blockquote, (remaining) => (peekLength = remaining)) +
@@ -690,7 +788,7 @@ export namespace MdBuilder {
             if (fence?.trim().length) {
               const trimmedFence = fence.trim();
               const fenceChars = Array.from(new Set(trimmedFence.split("")));
-              let maxLength = trimmedFence.length;
+              let maxLength = 0;
               code.replace(
                 new RegExp("(?:^|\n)[ \t]*((?:" + fenceChars.map((char) => escapeRegExpLiteral(char)).join("|") + ")+)[ \t]*(?:\n|$)", "g"),
                 (fullMatch, fenceMatch) => {
@@ -716,17 +814,103 @@ export namespace MdBuilder {
     }
   }
 
+  export class Footnote<T = never, C extends Context = Context> extends BlockElement<C> {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (BlockElement<C> | string | InlineElement<C> | RawElement<C> | T)[]) {
+      super();
+    }
+
+    refId: string | number | undefined;
+    setId(id: string | number) {
+      this.refId = id;
+      return this;
+    }
+
+    push(...content: (BlockElement<C> | string | InlineElement<C> | RawElement<C> | T)[]) {
+      this.content.push(...content);
+      return this;
+    }
+
+    _ref?: FootnoteReference<T, C>;
+    get ref() {
+      if (!this._ref) this._ref = new FootnoteReference(this);
+      return this._ref;
+    }
+
+    protected _getCacheEntry(context: Context) {
+      let entry = context._state._footnoteRefCache.get(this);
+      if (!entry) {
+        entry = { refId: this.refId ?? context._state.footnoteSeq++, referenced: 0, included: 0 };
+        context._state._footnoteRefCache.set(this, entry);
+      }
+      return entry;
+    }
+
+    getRefId(context: Context, { referenced, included }: { referenced?: boolean; included?: boolean }) {
+      const entry = this._getCacheEntry(context);
+      if (referenced) entry.referenced++;
+      if (included) entry.included++;
+      return entry.refId;
+    }
+
+    describe(context: C) {
+      const descLength = 160;
+      const peekStr = this._toString(
+        { ...context, ..._defaultOptions, smartEscape: true, smartUrlEscape: true, dedupReferences: false },
+        descLength + 1
+      ).trim();
+      return MdBuilder.trimLength(peekStr, descLength);
+    }
+
+    protected _toString(context: C, peekLength: number | undefined): string {
+      const cacheEntry = this._getCacheEntry(context);
+      if (cacheEntry.included > 0 && context.dedupReferences) {
+        return "";
+      }
+      const mark = `[^${this.getRefId(context, { included: peekLength === undefined })}]: `;
+      const blocks = BlockElement._groupElements(this.content);
+      return blocks
+        .map((block, index) => {
+          const indent = index === 0 ? "" : context.footnoteIndent;
+          if (block instanceof BlockElement) {
+            return index === 0
+              ? Element._peekPiece(peekLength, "\n" + mark, (remaining) => (peekLength = remaining)) +
+                  Element._peekPiece(
+                    peekLength,
+                    () => BlockElement._toString(block, context, peekLength ? peekLength + "\n".length : peekLength).replace(/^\n/g, ""),
+                    (remaining) => (peekLength = remaining)
+                  )
+              : Element._peekPiece(
+                  peekLength,
+                  () => BlockElement._toString(block, context, peekLength).replace(/\n(?!$)/g, "\n" + indent),
+                  (remaining) => (peekLength = remaining)
+                );
+          } else {
+            return (
+              Element._peekPiece(peekLength, "\n" + (index === 0 ? mark : indent), (remaining) => (peekLength = remaining)) +
+              Element._peekPiece(
+                peekLength,
+                () => InlineElement._toString(this.md, block, context, peekLength).replace(/\n/g, "\n" + indent),
+                (remaining) => (peekLength = remaining)
+              ) +
+              Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
+            );
+          }
+        })
+        .join("");
+    }
+  }
+
   export class Heading<T = never, C extends Context = Context> extends BlockElement<C> {
     constructor(
       readonly md: ExtensibleMd<T, C>,
       readonly level: number | undefined,
-      readonly title: (string | InlineElement<C> | T)[],
+      readonly title: (string | InlineElement<C> | RawElement<C> | T)[],
       readonly headingId?: string
     ) {
       super();
     }
 
-    concat(...content: (string | InlineElement<C> | T)[]) {
+    concat(...content: (string | InlineElement<C> | RawElement<C> | T)[]) {
       this.title.push(...content);
       return this;
     }
@@ -771,31 +955,31 @@ export namespace MdBuilder {
     }
   }
 
-  export class LinkReference<T = never, C extends Context = Context> extends BlockElement<C> {
+  export class LinkUrl<T = never, C extends Context = Context> extends BlockElement<C> {
     constructor(readonly md: ExtensibleMd<T, C>, readonly href: string, readonly title?: string) {
       super();
     }
 
-    protected _getRefEntry(context: Context) {
-      if (!context._referenceCache) throw new Error("MdBuilder: Context._referenceCache is " + context._referenceCache);
-      let entry = context._referenceCache.get(this);
+    protected _getCacheEntry(context: Context) {
+      let entry = context._state._linkUrlCache.get(this);
       if (!entry) {
-        entry = { refNumber: context.referencedLinkSeq++, referenced: 0, included: 0 };
-        context._referenceCache.set(this, entry);
+        entry = { refNumber: context._state.referencedLinkSeq++, referenced: 0, included: 0 };
+        context._state._linkUrlCache.set(this, entry);
       }
       return entry;
     }
 
-    getRefNumber(context: Context, isReferenced?: boolean) {
-      const entry = this._getRefEntry(context);
-      if (isReferenced) entry.referenced++;
+    getRefNumber(context: Context, { referenced, included }: { referenced?: boolean; included?: boolean }) {
+      const entry = this._getCacheEntry(context);
+      if (referenced) entry.referenced++;
+      if (included) entry.included++;
       return entry.refNumber;
     }
 
-    describe(context: C) {
+    _describe(context: C) {
       const descLength = 160;
       let peekStr = this._toString(
-        { ...defaultOptions, smartEscape: true, smartUrlEscape: true, checkReferences: false, _referenceCache: context._referenceCache },
+        { ...context, ..._defaultOptions, smartEscape: true, smartUrlEscape: true, dedupReferences: false },
         descLength + 1
       );
       if (peekStr.length >= descLength) peekStr = peekStr.trim().substring(0, descLength - 1) + "…";
@@ -804,15 +988,16 @@ export namespace MdBuilder {
     }
 
     protected _toString(context: Context, peekLength: number | undefined) {
-      if (peekLength === undefined && context._referenceCache) {
-        this._getRefEntry(context).included++;
+      const cacheEntry = this._getCacheEntry(context);
+      if (cacheEntry.included > 0 && context.dedupReferences) {
+        return "";
       }
       return (
         Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining)) +
         Element._peekPiece(
           peekLength,
           () => {
-            return `[${this.getRefNumber(context)}]: <${Element._escapeUrl(this.href, context, "<")}>${
+            return `[${this.getRefNumber(context, { included: peekLength === undefined })}]: <${Element._escapeUrl(this.href, context, "<")}>${
               this.title ? ` "${Element._escapeTitle(this.title, context)}"` : ""
             }`;
           },
@@ -826,13 +1011,13 @@ export namespace MdBuilder {
   export class List<T = never, C extends Context = Context> extends BlockElement<C> {
     constructor(
       readonly md: ExtensibleMd<T, C>,
-      readonly items: (string | InlineElement<C> | T | BlockElement<C>)[],
+      readonly items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[],
       readonly mark?: "-" | "*" | "+" | number
     ) {
       super();
     }
 
-    push(...items: (string | InlineElement<C> | T | BlockElement<C>)[]) {
+    push(...items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[]) {
       this.items.push(...items);
       return this;
     }
@@ -847,18 +1032,22 @@ export namespace MdBuilder {
         else mark = mark[Math.max((((listLevel - 1) % mark.length) + mark.length) % mark.length, 0)]; // % + % to handle negative levels
       }
       if (typeof mark === "string" && !mark.endsWith(" ")) mark += " ";
+      let nextBlock = true;
       return this.items
         .map((item, index, array) => {
+          const isBlock = nextBlock;
           if (item instanceof BlockElement) {
             const indent = "    ";
+            nextBlock = true;
             return Element._peekPiece(
               peekLength,
               () => BlockElement._toString(item, { ...context, listLevel: listLevel + 1 }, peekLength).replace(/\n(?!$)/g, "\n" + indent),
               (remaining) => (peekLength = remaining)
             );
           } else {
+            nextBlock = false;
             return (
-              Element._peekPiece(peekLength, index === 0 ? "\n" : "", (remaining) => (peekLength = remaining)) +
+              Element._peekPiece(peekLength, isBlock ? "\n" : "", (remaining) => (peekLength = remaining)) +
               Element._peekPiece(
                 peekLength,
                 () => (typeof mark === "number" ? mark + index + context.orderedList + " " : mark),
@@ -869,7 +1058,7 @@ export namespace MdBuilder {
                 () => InlineElement._toString(this.md, item, context, peekLength),
                 (remaining) => (peekLength = remaining)
               ) +
-              Element._peekPiece(peekLength, index === array.length - 1 ? "\n\n" : "\n", (remaining) => (peekLength = remaining))
+              Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
             );
           }
         })
@@ -878,20 +1067,20 @@ export namespace MdBuilder {
   }
 
   export class Paragraph<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (string | InlineElement<C> | T)[]) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (string | InlineElement<C> | RawElement<C> | T)[]) {
       super();
     }
 
-    concat(...content: (string | InlineElement<C> | T)[]) {
+    concat(...content: (string | InlineElement<C> | RawElement<C> | T)[]) {
       this.content.push(...content);
       return this;
     }
 
     protected static smartEscapeRegExp = /((?<=^\s*|\n\s*)(?:[#>]|[=-]+[ \t]*(?=\n|$)|[*+-][ \t]))/g;
-    protected static smartEscapeOrderedListRegExp = /((?<=^\s*|\n\s*[0-9]+))([.)][ \t])/g;
+    protected static smartEscapeOrderedListRegExp = /((?<=^\s*|\n\s*)[0-9]+)([.)][ \t])/g;
     protected static smartTrimRegExp = /(?:(?<=^|\n)[ \t]+)|(?:[ \t]+(?=$))/g; // space can not be escaped, and space on line start doesn't usually display anyway
     protected static smartPipeRegExp = /(?<=^|\n)([ \t]*)([|]?[-:| \t]*---[-:| \t]*)(?=\n|$)/g; // some parser would accept it if there is at least one --- in the header separator
-    protected static smartEscape<C extends Context>(content: string, context: C) {
+    static smartEscape<C extends Context>(content: string, context: C) {
       if (context.smartEscape) {
         return content
           .replace(this.smartEscapeRegExp, "\\$1")
@@ -943,5 +1132,10 @@ export namespace MdBuilder {
         .join("");
       return headingStr + contentStr;
     }
+  }
+
+  export function trimLength(s: string, maxLength: number): string {
+    if (s.length > maxLength) return s.substring(0, maxLength - 1) + "…";
+    else return s;
   }
 }

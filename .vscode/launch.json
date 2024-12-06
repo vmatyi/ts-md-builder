@@ -15,7 +15,10 @@
       "cwd": "${workspaceRoot}",
       "type": "node",
       "runtimeArgs": ["-r", "ts-node/register"],
-      "args": ["${workspaceRoot}/sample/test-run.ts"]
+      "program": "${workspaceRoot}/node_modules/vitest/vitest.mjs",
+      "args": ["run", "sample/md-builder.test.ts"],
+      // "args": ["run", "${relativeFile}"],
+      "console": "integratedTerminal"
     }
   ]
 }
