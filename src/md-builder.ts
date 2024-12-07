@@ -87,6 +87,11 @@ export namespace MdBuilder {
   export type ToStringOptions<C extends Context = Context> = Omit<C, keyof Context> & Partial<Pick<C, keyof Context>>;
   export type ErrorHandler<T> = (output: string, errors: ErrorInfo[]) => T;
 
+  export const LEFT = "left";
+  export const CENTER = "center";
+  export const RIGHT = "right";
+  export type TableHeaderAlign = typeof LEFT | typeof CENTER | typeof RIGHT;
+
   const _defaultOptions: Omit<Context, "headingLevel" | "listLevel" | "_state"> = {
     hr: "---",
     bold: "**",
@@ -342,6 +347,22 @@ export namespace MdBuilder {
 
     task(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Task<T, C>(this, ExtensibleMd._templateToArray(content, values));
+    }
+
+    table(header: (TableHeader | InlineContent<T, C>)[], ...rows: (InlineContent<T, C>[] | TableRow<T, C>)[]) {
+      return new Table<T, C>(
+        this,
+        header.map((cell) => (cell instanceof TableHeader ? cell : new TableHeader<T, C>(this, [cell]))),
+        rows.map((row) => (row instanceof TableRow ? row : new TableRow<T, C>(this, row)))
+      );
+    }
+
+    tr(...cells: InlineContent<T, C>[]) {
+      return new TableRow<T, C>(this, cells);
+    }
+
+    th(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
+      return new TableHeader<T, C>(this, ExtensibleMd._templateToArray(content, values));
     }
   }
 
@@ -1250,6 +1271,129 @@ export namespace MdBuilder {
         )
         .join("");
       return headingStr + contentStr;
+    }
+  }
+
+  class TableHeader<T = never, C extends Context = Context> extends Element<C> {
+    private readonly [typeduckSymbol] = TableHeader;
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: InlineContent<T, C>[], public align?: TableHeaderAlign) {
+      super();
+    }
+
+    setAlign(align: TableHeaderAlign) {
+      this.align = align;
+      return this;
+    }
+
+    protected _toString(context: C, peekLength: number | undefined) {
+      return Element._peekPiece(
+        peekLength,
+        () => InlineElement._toString(this.md, this.content, context, peekLength),
+        (remaining) => (peekLength = remaining)
+      );
+    }
+    static _toString<T, C extends Context>(header: TableHeader<T, C>, context: C, peekLength: number | undefined) {
+      return header._toString(context, peekLength);
+    }
+  }
+
+  class TableRow<T = never, C extends Context = Context> extends Element<C> {
+    private readonly [typeduckSymbol] = TableRow;
+    constructor(readonly md: ExtensibleMd<T, C>, readonly cells: InlineContent<T, C>[]) {
+      super();
+    }
+
+    protected _toString(context: C, peekLength: number | undefined, header?: TableHeader<T, C>[], widths?: number[]) {
+      return this.cells
+        .map((cell, index, array) => {
+          return (
+            Element._peekPiece(peekLength, index === 0 ? "| " : " | ", (remaining) => (peekLength = remaining)) +
+            Element._peekPiece(
+              peekLength,
+              () => {
+                let str = InlineElement._toString(this.md, cell, context, peekLength).replace(/([|])/g, "\\$1");
+                if (widths?.[index] !== undefined && (peekLength === undefined || str.length < peekLength)) {
+                  const align = header?.[index].align ?? LEFT;
+                  if (align === LEFT) str = str.padEnd(widths[index]);
+                  else if (align === RIGHT) str = str.padStart(widths[index]);
+                  else {
+                    const leftPadding = Math.floor((widths[index] - str.length) / 2);
+                    str = " ".repeat(leftPadding) + str + " ".repeat(widths[index] - str.length - leftPadding);
+                  }
+                }
+                return str;
+              },
+              (remaining) => (peekLength = remaining)
+            ) +
+            Element._peekPiece(peekLength, index === array.length - 1 ? " |\n" : "", (remaining) => (peekLength = remaining))
+          );
+        })
+        .join("");
+    }
+    static _toString<T, C extends Context>(
+      row: TableRow<T, C>,
+      context: C,
+      peekLength: number | undefined,
+      header: TableHeader<T, C>[],
+      widths: number[]
+    ) {
+      return row._toString(context, peekLength, header, widths);
+    }
+  }
+
+  class Table<T = never, C extends Context = Context> extends BlockElement<C> {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly header: TableHeader<T, C>[], readonly rows: TableRow<T, C>[]) {
+      super();
+    }
+
+    protected _toString(context: C, peekLength: number | undefined) {
+      const widths: number[] = [];
+      return (
+        Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining)) +
+        this.header
+          .map((cell, index, array) => {
+            return (
+              Element._peekPiece(peekLength, index === 0 ? "| " : " | ", (remaining) => (peekLength = remaining)) +
+              Element._peekPiece(
+                peekLength,
+                () => {
+                  const str = TableHeader._toString(cell, context, peekLength).replace(/([|])/g, "\\$1");
+                  widths[index] = Math.min(str.length, 20);
+                  return str;
+                },
+                (remaining) => (peekLength = remaining)
+              ) +
+              Element._peekPiece(peekLength, index === array.length - 1 ? " |\n" : "", (remaining) => (peekLength = remaining))
+            );
+          })
+          .join("") +
+        this.header
+          .map((cell, index, array) => {
+            return (
+              Element._peekPiece(peekLength, index === 0 ? "| " : " | ", (remaining) => (peekLength = remaining)) +
+              Element._peekPiece(
+                peekLength,
+                () => {
+                  const leftMark = cell.align === LEFT || cell.align === CENTER ? ":" : "";
+                  const rightMark = cell.align === RIGHT || cell.align === CENTER ? ":" : "";
+                  return leftMark + "-".repeat(Math.max(widths[index] - leftMark.length - rightMark.length, 3)) + rightMark;
+                },
+                (remaining) => (peekLength = remaining)
+              ) +
+              Element._peekPiece(peekLength, index === array.length - 1 ? " |\n" : "", (remaining) => (peekLength = remaining))
+            );
+          })
+          .join("") +
+        this.rows
+          .map((row) =>
+            Element._peekPiece(
+              peekLength,
+              () => TableRow._toString(row, context, peekLength, this.header, widths),
+              (remaining) => (peekLength = remaining)
+            )
+          )
+          .join("")
+      );
     }
   }
 

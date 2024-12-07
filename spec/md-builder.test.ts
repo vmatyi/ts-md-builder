@@ -12,6 +12,7 @@ function showDiff(a: string, b: string) {
   if (a !== b) console.log(wrap(a) + "\n---------------\n" + wrap(b));
 }
 
+const testOutpus: string[] = [];
 function toStringTest<C extends MdBuilder.Context>(
   from: MdBuilder.Element<C>,
   to: string,
@@ -35,6 +36,7 @@ function toStringTest<C extends MdBuilder.Context>(
           onErrors ?? ((output, errors) => output + "\\\\ errors:" + errors.map((error) => error.errorType).join(","))
         );
         showDiff(mdStr, to);
+        testOutpus.push(mdStr);
         return toBe(expect(mdStr), to);
       }
     }
@@ -288,7 +290,7 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     (exp, to) => exp.toBe(to)
   );
   toStringTest(md.hr(), `\n---\n`, (exp, to) => exp.toBe(to));
-  toStringTest(md.hr(), `\n===\n`, (exp, to) => exp.toBe(to), { hr: ["---", "==="], headingLevel: 2 });
+  toStringTest(md.hr(), `\n***\n`, (exp, to) => exp.toBe(to), { hr: ["---", "***"], headingLevel: 2 });
   toStringTest(md.codeblock("{\n  // comment ```` ~~~~\n  goto 10;\n}"), "\n```\n{\n  // comment ```` ~~~~\n  goto 10;\n}\n```\n", (exp, to) =>
     exp.toBe(to)
   );
@@ -332,8 +334,8 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     const emd = new ExtensionTest();
     const now = new Date();
     toStringTest(
-      emd.p`now is: ${now}`,
-      "\nnow is: " + now.toLocaleString("en-US", { timeZone: "Pacific/Auckland" }) + "\n",
+      emd.p`now is: ${now} in Auckland`,
+      "\nnow is: " + now.toLocaleString("en-US", { timeZone: "Pacific/Auckland" }) + " in Auckland\n",
       (exp, to) => exp.toBe(to),
       { timeZone: "Pacific/Auckland" }
     );
@@ -377,6 +379,49 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     (exp, to) => exp.toBe(to),
     { escapeEmojisInText: "allSpecChars" }
   );
+  {
+    const table = md.table(
+      [md.th`header 1`.setAlign(MdBuilder.LEFT), md.th`header 2`.setAlign(MdBuilder.CENTER), md.th`header |3|`.setAlign(MdBuilder.RIGHT)],
+      [md.t`cell 1`, md.t`cell 2`, md.t`cell |3|`],
+      md.tr(`cell 4`, md.t`cell 5`, md.t`cell |6|`)
+    );
+    toStringTest(
+      table,
+      "\n| header 1 | header 2 | header \\|3\\| |\n" +
+        "| :------- | :------: | -----------: |\n" +
+        "| cell 1   |  cell 2  |   cell \\|3\\| |\n" +
+        "| cell 4   |  cell 5  |   cell \\|6\\| |\n",
+      (exp, to) => exp.toBe(to)
+    );
+  }
+  {
+    const nColumns = 3;
+    const nRows = 2;
+    const header = [];
+    for (let i = 0; i < nColumns; i++) {
+      header.push(md.th`header ${i + 1 + " ".padEnd(3 + i * 8, "+")}`.setAlign(i === 0 ? MdBuilder.LEFT : MdBuilder.CENTER));
+    }
+    const rows = [];
+    for (let r = 0; r < nRows; r++) {
+      const row = [];
+      for (let c = 0; c < nColumns; c++) {
+        row.push(md.t`cell ${r + 1 + ""}.${c + 1 + ""}`);
+      }
+      rows.push(row);
+    }
+    const table = md.table(header, ...rows);
+    toStringTest(
+      table,
+      "\n| header 1 ++ | header 2 ++++++++++ | header 3 ++++++++++++++++++ |\n" +
+        "| :---------- | :-----------------: | :------------------: |\n" +
+        "| cell 1.1    |      cell 1.2       |       cell 1.3       |\n" +
+        "| cell 2.1    |      cell 2.2       |       cell 2.3       |\n",
+      (exp, to) => exp.toBe(to)
+    );
+  }
+  test("Markdown outputs", () => {
+    console.log(testOutpus.join("\n\n"));
+  });
 }
 
 testRun();
