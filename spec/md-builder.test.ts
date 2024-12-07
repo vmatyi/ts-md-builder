@@ -47,7 +47,7 @@ function testRun() {
     toStringTest(md.t`#Not a heading either`, "\\#Not a heading either", (exp, to) => exp.toBe(to));
     toStringTest(md.t` # Not a heading either`, " \\# Not a heading either", (exp, to) => exp.toBe(to));
     toStringTest(md.t`Still not heading\n=`, "Still not heading  \n\\=", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`Still not heading\n====`, "Still not heading  \n\\====", (exp, to) => exp.toBe(to));
+    toStringTest(md.t`Still not heading\n====`, "Still not heading  \n\\=\\=\\==", (exp, to) => exp.toBe(to));
     toStringTest(md.t`Still not heading\n-`, "Still not heading  \n\\-", (exp, to) => exp.toBe(to));
     toStringTest(md.t`>Not a quote`, "\\>Not a quote", (exp, to) => exp.toBe(to));
     toStringTest(md.t` > No quoting`, " \\> No quoting", (exp, to) => exp.toBe(to));
@@ -72,11 +72,11 @@ function testRun() {
     toStringTest(md.t`    Indented, but not code`, " Indented, but not code", (exp, to) => exp.toBe(to));
     toStringTest(md.t`	Not code, with Tab indentation`, " Not code, with Tab indentation", (exp, to) => exp.toBe(to));
     toStringTest(md.t`\`\`\``, "\\`\\`\\`", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`\`\`\`\` @#$%^!`, "\\`\\`\\`\\` @#$%^!", (exp, to) => exp.toBe(to));
+    toStringTest(md.t`\`\`\`\` @#$%!`, "\\`\\`\\`\\` @#$%!", (exp, to) => exp.toBe(to));
     toStringTest(md.t`~~~`, "\\~\\~\\~", (exp, to) => exp.toBe(to));
     toStringTest(
-      md.t`not _italic_ not **bold** not ~~strikethrough~~ not \`code\``,
-      "not \\_italic\\_ not \\*\\*bold\\*\\* not \\~\\~strikethrough\\~\\~ not \\`code\\`",
+      md.t`not _italic_ not **bold** not ~~strikethrough~~ not \`code\` not ~sub~ not ^super^ not ==highlight==`,
+      "not \\_italic\\_ not \\*\\*bold\\*\\* not \\~\\~strikethrough\\~\\~ not \\`code\\` not \\~sub\\~ not \\^super\\^ not \\==highlight\\==",
       (exp, to) => exp.toBe(to)
     );
     toStringTest(md.t`keep_underscore _in_the_middle_`, "keep_underscore \\_in_the_middle\\_", (exp, to) => exp.toBe(to));
@@ -258,7 +258,7 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     const mdStr = md.p`!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~`.toString({
       smartEscape: false,
     });
-    const to = `\n\\!"\\#$%&'()\\*\\+,\\-\\./0123456789\\:;\\<=\\>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\[\\\\\\]^\\_\\\`abcdefghijklmnopqrstuvwxyz\\{\\|\\}\\~\n`;
+    const to = `\n\\!"\\#$%&'()\\*\\+,\\-\\./0123456789\\:;\\<=\\>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\[\\\\\\]\\^\\_\\\`abcdefghijklmnopqrstuvwxyz\\{\\|\\}\\~\n`;
     showDiff(mdStr, to);
     expect(mdStr).toBe(to);
   });
@@ -306,8 +306,8 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   toStringTest(md.blockquote(md.p`I've never said that`).push(md.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
   toStringTest(md.blockquote(md.p`I've never said that`).push(md.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
   toStringTest(
-    md.p`Text ${md.b`bold ${md.i`italic ${md.s`strikethrough ${md.sub`subscript`}${md.sup`superscript`}`}`}`}`,
-    "\nText **bold *italic ~~strikethrough ~subscript~^superscript^~~***\n",
+    md.p`Text ${md.b`bold ${md.i`italic ${md.s`strikethrough ${md.sub`subscript`}${md.sup`superscript`}${md.highlight`highlight`}`}`}`}`,
+    "\nText **bold *italic ~~strikethrough ~subscript~^superscript^==highlight==~~***\n",
     (exp, to) => exp.toBe(to)
   );
   toStringTest(
@@ -368,12 +368,12 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   // escaped: :$ :( :) :* :/ :@ :D :O :P :o :s :z :|
   toStringTest(
     md.t`smart smiley escape :! :" :# :$ :% :& :' :( :) :* :+ :, :- :. :/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :< := :> :? :@ :A :B :C :D :E :F :G :H :I :J :K :L :M :N :O :P :Q :R :S :T :U :V :W :X :Y :Z :[ :\ :\ :] :^ :_ :\\ :\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n :o :p :q :r :s :t :u :v :w :x :y :z :{ :| :} :~`,
-    `smart smiley escape :! :" :# \\:$ :% :& :' \\:( \\:) :\\* :+ :, :- :. \\:/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :\\< := :\\> :? \\:@ :A :B :C \\:D :E :F :G :H :I :J :K :L :M :N \\:O \\:P :Q :R :S :T :U :V :W :X :Y :Z :\\[ :\ :\ :\\] :^ :\\_ :\\\\ :\\\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n \\:o :p :q :r \\:s :t :u :v :w :x :y \\:z :\\{ \\:| :\\} :\\~`,
+    `smart smiley escape :! :" :# \\:$ :% :& :' \\:( \\:) :\\* :+ :, :- :. \\:/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :\\< := :\\> :? \\:@ :A :B :C \\:D :E :F :G :H :I :J :K :L :M :N \\:O \\:P :Q :R :S :T :U :V :W :X :Y :Z :\\[ :\ :\ :\\] :\\^ :\\_ :\\\\ :\\\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n \\:o :p :q :r \\:s :t :u :v :w :x :y \\:z :\\{ \\:| :\\} :\\~`,
     (exp, to) => exp.toBe(to)
   );
   toStringTest(
     md.t`allSpecChars smiley escape :! :" :# :$ :% :& :' :( :) :* :+ :, :- :. :/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :< := :> :? :@ :A :B :C :D :E :F :G :H :I :J :K :L :M :N :O :P :Q :R :S :T :U :V :W :X :Y :Z :[ :\ :\ :] :^ :_ :\\ :\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n :o :p :q :r :s :t :u :v :w :x :y :z :{ :| :} :~`,
-    `allSpecChars smiley escape \\:! \\:" \\:# \\:$ \\:% \\:& \\:' \\:( \\:) \\:\\* \\:+ \\:, \\:- \\:. \\:/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 \\:: \\:; \\:\\< \\:= \\:\\> \\:? \\:@ :A :B :C \\:D :E :F :G :H :I :J :K :L :M :N \\:O \\:P :Q :R :S :T :U :V :W :X :Y :Z \\:\\[ \\:\ \\:\ \\:\\] \\:^ \\:\\_ \\:\\\\ \\:\\\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n \\:o :p :q :r \\:s :t :u :v :w :x :y \\:z \\:\\{ \\:| \\:\\} \\:\\~`,
+    `allSpecChars smiley escape \\:! \\:" \\:# \\:$ \\:% \\:& \\:' \\:( \\:) \\:\\* \\:+ \\:, \\:- \\:. \\:/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 \\:: \\:; \\:\\< \\:= \\:\\> \\:? \\:@ :A :B :C \\:D :E :F :G :H :I :J :K :L :M :N \\:O \\:P :Q :R :S :T :U :V :W :X :Y :Z \\:\\[ \\:\ \\:\ \\:\\] \\:\\^ \\:\\_ \\:\\\\ \\:\\\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n \\:o :p :q :r \\:s :t :u :v :w :x :y \\:z \\:\\{ \\:| \\:\\} \\:\\~`,
     (exp, to) => exp.toBe(to),
     { escapeEmojisInText: "allSpecChars" }
   );

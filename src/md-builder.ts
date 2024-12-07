@@ -13,6 +13,8 @@ export namespace MdBuilder {
     subscript: string;
     /** Supercript text marker "^" | "<sup>" */
     superscript: string;
+    /** Highlight text marker "==" | "<mark>" */
+    highlight: string;
     /** Block quote marker "> " | ">" */
     blockquote: string;
     /** footnote sub-paragraph indentation "    " | "\t" */
@@ -31,7 +33,7 @@ export namespace MdBuilder {
     // Line start:
     //   # heading
     //   > block quote
-    //   : definition
+    //   : definition (extended syntax)
     //   = - Heading 1/2 underline
     //   2+space/tab List/Codeblock indentation (can't be escaped, should be trimmed/coalesced as they usually don't display anyway)
     //   * + - Unordered list
@@ -42,6 +44,7 @@ export namespace MdBuilder {
     //   * Bold/Italic
     //   _ Bold/Italic except inside words, eg do_not_escape
     //   ^ ~ Superscript/Subscript/Strike-through(extended syntax)
+    //   == Highlight (extended syntax)
     //   ` Code / Codeblock
     //   [ ] links
     //   <> url/email
@@ -91,6 +94,7 @@ export namespace MdBuilder {
     strikethrough: "~~",
     subscript: "~",
     superscript: "^",
+    highlight: "==",
     blockquote: "> ",
     footnoteIndent: "    ",
     code: "`",
@@ -208,27 +212,32 @@ export namespace MdBuilder {
     t(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values));
     }
-    /** Bold */
+    /** **Bold** */
     b(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "bold");
     }
 
-    /** Italic */
+    /** ==Highlight== */
+    highlight(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+      return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "highlight");
+    }
+
+    /** _Italic_ */
     i(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "italic");
     }
 
-    /** Strike-through */
+    /** ~~Strike-through~~ */
     s(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "strikethrough");
     }
 
-    /** Superscript */
+    /** ^Superscript^ */
     sup(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "superscript");
     }
 
-    /** Subscript */
+    /** ~Subscript~ */
     sub(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "subscript");
     }
@@ -378,8 +387,8 @@ export namespace MdBuilder {
   export abstract class Element<C extends Context = Context> {
     protected static _escapeText(text: string, context: Pick<Context, "smartEscape" | "nl" | "escapeEmojisInText">) {
       let escaped = context.smartEscape
-        ? text.replace(/([0-9A-Za-z]_[0-9A-Za-z])|([\\*_`[\]{}<>~])/g, (match, keeper, escape) => keeper ?? "\\" + escape)
-        : text.replace(/([\\*_`|[\]{}<>~#+\-.!])/g, "\\$1");
+        ? text.replace(/([0-9A-Za-z]_[0-9A-Za-z])|([\\*_`[\]{}<>~^]|=(?==))/g, (match, keeper, escape) => keeper ?? "\\" + escape)
+        : text.replace(/([\\*_`|[\]{}<>~^#+\-.!])/g, "\\$1");
       if (context.escapeEmojisInText) {
         escaped = context.smartEscape
           ? context.escapeEmojisInText === "allSpecChars"
@@ -765,7 +774,7 @@ export namespace MdBuilder {
     constructor(
       readonly md: ExtensibleMd<T, C>,
       readonly content: (string | InlineElement<C> | RawElement<C> | T)[],
-      readonly emphasis?: keyof Pick<Context, "bold" | "italic" | "strikethrough" | "superscript" | "subscript">
+      readonly emphasis?: keyof Pick<Context, "bold" | "italic" | "strikethrough" | "superscript" | "subscript" | "highlight">
     ) {
       super();
     }
