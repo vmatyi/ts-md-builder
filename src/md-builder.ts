@@ -236,10 +236,10 @@ export namespace MdBuilder {
 
     /** Use href="http://url" for normal links, href = "#headingId" for intra-page link or href = md.linkUrl(...) for reference-style links */
     link(text: string | InlineElement<C> | RawElement<C> | T, href: string, title: string): Link<T, C>;
-    link(text: string | InlineElement<C> | RawElement<C> | T, linkUrl: LinkUrl): Link<T, C>;
-    link(text: string | InlineElement<C> | RawElement<C> | T, hrefOrLinkUrl: string | LinkUrl, title?: string): Link<T, C>;
-    link(text: string | InlineElement<C> | RawElement<C> | T, hrefOrLinkUrl: string | LinkUrl, title?: string) {
-      return new Link<T, C>(this, text, hrefOrLinkUrl, title);
+    link(text: string | InlineElement<C> | RawElement<C> | T, target: LinkUrl | Heading): Link<T, C>;
+    link(text: string | InlineElement<C> | RawElement<C> | T, hrefOrTarget: string | LinkUrl | Heading, title?: string): Link<T, C>;
+    link(text: string | InlineElement<C> | RawElement<C> | T, hrefOrTarget: string | LinkUrl | Heading, title?: string) {
+      return new Link<T, C>(this, text, hrefOrTarget, title);
     }
 
     /** @deprecated Use linkUrl(href, title) instead */
@@ -640,14 +640,14 @@ export namespace MdBuilder {
     constructor(
       md: ExtensibleMd<T, C>,
       text: string | InlineElement<C> | RawElement<C> | T,
-      hrefOrLinkUrl: string | LinkUrl,
+      hrefOrTarget: string | LinkUrl | Heading,
       title?: string,
       isImage?: boolean
     );
     constructor(
       readonly md: ExtensibleMd<T, C>,
       readonly text: string | InlineElement<C> | RawElement<C> | T,
-      readonly hrefOrLinkUrl: string | LinkUrl,
+      readonly hrefOrTarget: string | LinkUrl | Heading,
       readonly title?: string,
       readonly isImage?: boolean
     ) {
@@ -666,10 +666,13 @@ export namespace MdBuilder {
         Element._peekPiece(
           peekLength,
           () => {
-            if (this.hrefOrLinkUrl instanceof LinkUrl) {
-              return `[${this.hrefOrLinkUrl.getRefNumber(context, { referenced: peekLength === undefined })}]`;
+            if (this.hrefOrTarget instanceof LinkUrl) {
+              return `[${this.hrefOrTarget.getRefNumber(context, { referenced: peekLength === undefined })}]`;
+            } else if (this.hrefOrTarget instanceof Heading) {
+              if (this.hrefOrTarget.headingId === undefined) throw new Error("MdBuilder - Heading has no id! heading:" + this.title);
+              return `(#${this.hrefOrTarget.headingId.replace(/([()])/g, "\\$1")})`;
             } else {
-              return `(${InlineElement._escapeUrl(this.hrefOrLinkUrl, context, "(")}${
+              return `(${InlineElement._escapeUrl(this.hrefOrTarget, context, "(")}${
                 this.title ? ` "${Element._escapeTitle(this.title, context)}"` : ""
               })`;
             }
@@ -945,9 +948,14 @@ export namespace MdBuilder {
       readonly md: ExtensibleMd<T, C>,
       readonly level: number | undefined,
       readonly title: (string | InlineElement<C> | RawElement<C> | T)[],
-      readonly headingId?: string
+      public headingId?: string
     ) {
       super();
+    }
+
+    setId(id: string | undefined) {
+      this.headingId = id;
+      return this;
     }
 
     concat(...content: (string | InlineElement<C> | RawElement<C> | T)[]) {
@@ -964,7 +972,11 @@ export namespace MdBuilder {
           () => InlineElement._toString(this.md, this.title, { ...context, headingLevel: headingLevel + 1, nl: " " }, peekLength),
           (remaining) => (peekLength = remaining)
         ) +
-        Element._peekPiece(peekLength, this.headingId ? ` {#${this.headingId}}` : "", (remaining) => (peekLength = remaining)) +
+        Element._peekPiece(
+          peekLength,
+          this.headingId ? ` {#${this.headingId.replace(/([{}])/g, "\\$1")}}` : "",
+          (remaining) => (peekLength = remaining)
+        ) +
         Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
       );
     }

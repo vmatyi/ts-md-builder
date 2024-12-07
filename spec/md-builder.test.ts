@@ -337,22 +337,13 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     "throw"
   );
   toStringTest(md.p`Invalid type ${5 as unknown as string}`, "_toString called on Md", (exp, to) => exp.toThrowError(to), undefined, "throw");
-  // // another example, in Javascript
-  // for (let i=0; i<Infinity; i++) {}
-  //  \`\`\``,
-  //         "js"
-  //       ),
-  //       linkRef,
-  //       md.section(
-  //         md.h`Subtitle`,
-  //         md.p`Text ${md.b`bold ${md.i`italic ${md.s`strikethrough ${md.sub`subscript`}${md.sup`superscript`}`}`}`}
-  // ${md.code("md.h` this is a code with ````-s ending with a `")}\n
-  // ${md.sup`superscript is non-standard markup`}`
-  //       )
-  //     )
-  //     .toString();
-
-  //   console.log(positiveTestStr);
+  const heading = md.h`Title`.setId("custom({id})");
+  toStringTest(
+    md.section(heading, md.p`Paragraph ${md.link("Title", heading)}`),
+    "\n# Title {#custom(\\{id\\})}\n\nParagraph [Title](#custom\\({id}\\))\n",
+    (exp, to) => exp.toBe(to)
+  );
+  toStringTest(md.definition(md.t`smiley`, md.t`A smiling face, like :)`), "\nsmiley\n: A smiling face, like :)\n", (exp, to) => exp.toBe(to));
 }
 
 testRun();
