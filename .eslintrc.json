@@ -15,6 +15,7 @@
       },
       "plugins": ["@typescript-eslint"],
       "rules": {
+        "prefer-const": "warn",
         "prettier/prettier": [
           "warn",
           {

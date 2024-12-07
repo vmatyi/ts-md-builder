@@ -39,7 +39,8 @@ export namespace MdBuilder {
     //   ``` ~~~ Codeblock fence, ` is escaped individually, and ~~ for strikethrough so no need for it on paragraph level (extended syntax)
     //   :---:|--- table (complicated rules, but it must contain at least one --- and no other characters than - : | space tab (extended syntax)
     // In text:
-    //   _ * Bold/Italic
+    //   * Bold/Italic
+    //   _ Bold/Italic except inside words, eg do_not_escape
     //   ^ ~ Superscript/Subscript/Strike-through(extended syntax)
     //   ` Code / Codeblock
     //   [ ] links
@@ -365,8 +366,10 @@ export namespace MdBuilder {
   };
 
   export abstract class Element<C extends Context = Context> {
-    protected static _escapeText(text: string, context: Pick<Context, "smartEscape" | "nl">) {
-      const escaped = context.smartEscape ? text.replace(/([\\*_`[\]{}<>]|~)/g, "\\$1") : text.replace(/([\\*_`|[\]{}<>~#+\-.!])/g, "\\$1");
+    protected static _escapeText(text: string, context: Pick<Context, "smartEscape" | "nl" | "escapeEmojisInText">) {
+      const escaped = context.smartEscape
+        ? text.replace(/([0-9A-Za-z]_[0-9A-Za-z])|([\\*_`[\]{}<>~])/g, (match, keeper, escape) => keeper ?? "\\" + escape)
+        : text.replace(/([\\*_`|[\]{}<>~#+\-.!])/g, "\\$1");
       return escaped.replace(/\n/g, context.nl).replace(/(^|\n)  (?=\n)/g, "$1\\"); // empty lines doesn't do very well with double-space NL escaping
     }
 
@@ -570,7 +573,7 @@ export namespace MdBuilder {
         Element._peekPiece(
           peekLength,
           () => {
-            const htmlTagMatch = mark.match(/\s*<(?<tagName>[a-zA-Z]+)[^>]*>\s*/);
+            const htmlTagMatch = mark.match(/\s*<(?<tagName>[A-Za-z]+)[^>]*>\s*/);
             if (htmlTagMatch) {
               return `</${htmlTagMatch.groups?.tagName}>`;
             } else {

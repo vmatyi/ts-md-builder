@@ -79,6 +79,7 @@ function testRun() {
       "not \\_italic\\_ not \\*\\*bold\\*\\* not \\~\\~strikethrough\\~\\~ not \\`code\\`",
       (exp, to) => exp.toBe(to)
     );
+    toStringTest(md.t`keep_underscore _in_the_middle_`, "keep_underscore \\_in_the_middle\\_", (exp, to) => exp.toBe(to));
     toStringTest(md.t`[Not a link](http://not.a.link)`, "\\[Not a link\\](http://not.a.link)", (exp, to) => exp.toBe(to));
     toStringTest(
       md.t`![Neither a link nor an image](http://not.a.link "Not a title")`,
