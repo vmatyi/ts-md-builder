@@ -12,7 +12,7 @@ function showDiff(a: string, b: string) {
   if (a !== b) console.log(wrap(a) + "\n---------------\n" + wrap(b));
 }
 
-function toStringTest<T, C extends MdBuilder.Context>(
+function toStringTest<C extends MdBuilder.Context>(
   from: MdBuilder.Element<C>,
   to: string,
   toBe: (exp: ReturnType<typeof expect<string>>, to: string) => void,

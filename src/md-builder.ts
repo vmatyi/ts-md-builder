@@ -124,6 +124,8 @@ export namespace MdBuilder {
     };
   }
 
+  export type InlineContent<T, C extends Context> = string | InlineElement<C> | RawElement<C> | T;
+
   export abstract class ExtensibleMd<T, C extends Context & Record<string, unknown>> {
     static _templateToArray<V>(template: string | TemplateStringsArray, values: V[]) {
       if (typeof template === "string") {
@@ -169,7 +171,7 @@ export namespace MdBuilder {
 
     // h(title: string): Heading<T, C>; - Would be nice, but would allow md.h(`${md.b("Title")`) by accident, which passes the evaluated string, not the TemplateString, causing troubles with custom Options and linkUrl-s
     /** Create a heading with automatically determined level from the document structure (nested sections) */
-    h(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    h(title: TemplateStringsArray, ...values: []) {
       return new Heading<T, C>(this, undefined, ExtensibleMd._templateToArray(title, values));
     }
 
@@ -179,66 +181,66 @@ export namespace MdBuilder {
     }
 
     /** Heading 1 */
-    h1(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    h1(title: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Heading<T, C>(this, 1, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 2 */
-    h2(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    h2(title: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Heading<T, C>(this, 2, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 3 */
-    h3(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    h3(title: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Heading<T, C>(this, 3, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 4 */
-    h4(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    h4(title: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Heading<T, C>(this, 4, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 5 */
-    h5(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    h5(title: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Heading<T, C>(this, 5, ExtensibleMd._templateToArray(title, values));
     }
     /** Heading 6 */
-    h6(title: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    h6(title: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Heading<T, C>(this, 6, ExtensibleMd._templateToArray(title, values));
     }
 
     /** Paragraph */
-    p(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    p(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Paragraph<T, C>(this, ExtensibleMd._templateToArray(content, values));
     }
 
     /** Normal text (no formatting) */
-    t(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    t(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values));
     }
     /** **Bold** */
-    b(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    b(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "bold");
     }
 
     /** ==Highlight== */
-    highlight(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    highlight(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "highlight");
     }
 
     /** _Italic_ */
-    i(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    i(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "italic");
     }
 
     /** ~~Strike-through~~ */
-    s(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    s(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "strikethrough");
     }
 
     /** ^Superscript^ */
-    sup(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    sup(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "superscript");
     }
 
     /** ~Subscript~ */
-    sub(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    sub(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Text<T, C>(this, ExtensibleMd._templateToArray(content, values), "subscript");
     }
 
@@ -248,10 +250,10 @@ export namespace MdBuilder {
     }
 
     /** Use href="http://url" for normal links, href = "#headingId" for intra-page link or href = md.linkUrl(...) for reference-style links */
-    link(text: string | InlineElement<C> | RawElement<C> | T, href: string, title: string): Link<T, C>;
-    link(text: string | InlineElement<C> | RawElement<C> | T, target: LinkUrl | Heading): Link<T, C>;
-    link(text: string | InlineElement<C> | RawElement<C> | T, hrefOrTarget: string | LinkUrl | Heading, title?: string): Link<T, C>;
-    link(text: string | InlineElement<C> | RawElement<C> | T, hrefOrTarget: string | LinkUrl | Heading, title?: string) {
+    link(text: InlineContent<T, C>, href: string, title: string): Link<T, C>;
+    link(text: InlineContent<T, C>, target: LinkUrl | Heading): Link<T, C>;
+    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading, title?: string): Link<T, C>;
+    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading, title?: string) {
       return new Link<T, C>(this, text, hrefOrTarget, title);
     }
 
@@ -264,13 +266,10 @@ export namespace MdBuilder {
       return new LinkUrl<T, C>(this, href, title);
     }
 
-    footnote(...content: (BlockElement | string | InlineElement<C>)[]): Footnote<T, C>;
-    footnote(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]): Footnote<T, C>;
-    footnote(
-      content: (BlockElement | string | InlineElement<C>) | TemplateStringsArray,
-      ...values: (BlockElement | string | InlineElement<C> | RawElement<C> | T)[]
-    ) {
-      if (typeof content === "string" || content instanceof InlineElement || content instanceof BlockElement) {
+    footnote(content0: InlineContent<never, C> | BlockElement, ...content: (InlineContent<T, C> | BlockElement)[]): Footnote<T, C>;
+    footnote(content: TemplateStringsArray, ...values: InlineContent<T, C>[]): Footnote<T, C>;
+    footnote(content: (InlineContent<never, C> | BlockElement) | TemplateStringsArray, ...values: (InlineContent<T, C> | BlockElement)[]) {
+      if (typeof content === "string" || content instanceof InlineElement || content instanceof RawElement || content instanceof BlockElement) {
         return new Footnote<T, C>(this, [content, ...values]);
       } else {
         return new Footnote<T, C>(this, ExtensibleMd._templateToArray(content, values));
@@ -296,13 +295,10 @@ export namespace MdBuilder {
     }
 
     /** Block quote: "> Some quoted text..." */
-    blockquote(...content: (BlockElement | string | InlineElement<C>)[]): Blockquote<T, C>;
-    blockquote(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]): Blockquote<T, C>;
-    blockquote(
-      content: (BlockElement | string | InlineElement<C>) | TemplateStringsArray,
-      ...values: (BlockElement | string | InlineElement<C> | RawElement<C> | T)[]
-    ) {
-      if (typeof content === "string" || content instanceof InlineElement || content instanceof BlockElement) {
+    blockquote(content0: InlineContent<never, C> | BlockElement, ...content: (InlineContent<T, C> | BlockElement)[]): Blockquote<T, C>;
+    blockquote(content: TemplateStringsArray, ...values: InlineContent<T, C>[]): Blockquote<T, C>;
+    blockquote(content: (InlineContent<never, C> | BlockElement) | TemplateStringsArray, ...values: (InlineContent<T, C> | BlockElement)[]) {
+      if (typeof content === "string" || content instanceof InlineElement || content instanceof RawElement || content instanceof BlockElement) {
         return new Blockquote<T, C>(this, [content, ...values]);
       } else {
         return new Blockquote<T, C>(this, ExtensibleMd._templateToArray(content, values));
@@ -331,20 +327,20 @@ export namespace MdBuilder {
     }
 
     /** Unordered list (a list with bullet points, without numbering) */
-    list(items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[] = []) {
+    list(items: (InlineContent<T, C> | BlockElement<C>)[] = []) {
       return new List<T, C>(this, items);
     }
 
     /** Ordered list (a list with numbering) */
-    ordered(items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[]) {
+    ordered(items: (InlineContent<T, C> | BlockElement<C>)[]) {
       return new List<T, C>(this, items, 1);
     }
     /** Ordered list (a list with numbering starting from the specified value) */
-    orderedFrom(start: number, items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[]) {
+    orderedFrom(start: number, items: (InlineContent<T, C> | BlockElement<C>)[]) {
       return new List<T, C>(this, items, start);
     }
 
-    task(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    task(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Task<T, C>(this, ExtensibleMd._templateToArray(content, values));
     }
   }
@@ -542,11 +538,7 @@ export namespace MdBuilder {
   export class Task<T = never, C extends Context = Context> extends Element<C> {
     private readonly [typeduckSymbol] = Task;
 
-    constructor(
-      readonly md: ExtensibleMd<T, C>,
-      readonly content: (string | InlineElement<C> | RawElement<C> | T)[],
-      public checked: boolean = false
-    ) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: InlineContent<T, C>[], public checked: boolean = false) {
       super();
     }
 
@@ -555,7 +547,7 @@ export namespace MdBuilder {
       return this;
     }
 
-    concat(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    concat(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       this.content.push(...ExtensibleMd._templateToArray(content, values));
       return this;
     }
@@ -584,7 +576,7 @@ export namespace MdBuilder {
 
     protected static _bracketMark<T, C extends Context>(
       md: ExtensibleMd<T, C>,
-      content: string | InlineElement<C> | RawElement<C> | T | (string | InlineElement<C> | RawElement<C> | T)[],
+      content: InlineContent<T, C> | InlineContent<T, C>[],
       context: C,
       mark: string,
       peekLength: number | undefined
@@ -613,7 +605,7 @@ export namespace MdBuilder {
 
     static _toString<T, C extends Context>(
       md: ExtensibleMd<T, C>,
-      content: string | InlineElement<C> | RawElement<C> | T | Task<T, C> | (string | InlineElement<C> | RawElement<C> | T)[],
+      content: InlineContent<T, C> | Task<T, C> | InlineContent<T, C>[],
       context: C,
       peekLength: number | undefined
     ): string {
@@ -715,25 +707,12 @@ export namespace MdBuilder {
   }
 
   export class Link<T = never, C extends Context = Context> extends InlineElement<C> {
-    // TODO consider smartEscape not to escape [ ], except when the output can actually be misinterpreted as a link/link reference. But might cause more confusion than it's benefits.
-    constructor(md: ExtensibleMd<T, C>, text: string | RawElement<C> | InlineElement<C> | T, href: string, title?: string, isImage?: boolean);
-    constructor(
-      md: ExtensibleMd<T, C>,
-      text: string | InlineElement<C> | RawElement<C> | T,
-      reference: LinkUrl,
-      unused?: undefined,
-      isImage?: boolean
-    );
-    constructor(
-      md: ExtensibleMd<T, C>,
-      text: string | InlineElement<C> | RawElement<C> | T,
-      hrefOrTarget: string | LinkUrl | Heading,
-      title?: string,
-      isImage?: boolean
-    );
+    constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, href: string, title?: string, isImage?: boolean);
+    constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, reference: LinkUrl, unused?: undefined, isImage?: boolean);
+    constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading, title?: string, isImage?: boolean);
     constructor(
       readonly md: ExtensibleMd<T, C>,
-      readonly text: string | InlineElement<C> | RawElement<C> | T,
+      readonly text: InlineContent<T, C>,
       readonly hrefOrTarget: string | LinkUrl | Heading,
       readonly title?: string,
       readonly isImage?: boolean
@@ -773,13 +752,13 @@ export namespace MdBuilder {
   export class Text<T = never, C extends Context = Context> extends InlineElement<C> {
     constructor(
       readonly md: ExtensibleMd<T, C>,
-      readonly content: (string | InlineElement<C> | RawElement<C> | T)[],
+      readonly content: InlineContent<T, C>[],
       readonly emphasis?: keyof Pick<Context, "bold" | "italic" | "strikethrough" | "superscript" | "subscript" | "highlight">
     ) {
       super();
     }
 
-    concat(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    concat(content: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       this.content.push(...ExtensibleMd._templateToArray(content, values));
       return this;
     }
@@ -810,8 +789,8 @@ export namespace MdBuilder {
       return item._toString(context, peekLength);
     }
 
-    protected static _groupElements<C extends Context, T>(content: (string | T | InlineElement<C> | BlockElement<C>)[]) {
-      let inlines: (string | InlineElement<C> | RawElement<C> | T)[] = [];
+    protected static _groupElements<C extends Context, T>(content: (InlineContent<T, C> | BlockElement<C>)[]) {
+      let inlines: InlineContent<T, C>[] = [];
       const blocks: (BlockElement<C> | typeof inlines)[] = [];
       content.forEach((item) => {
         if (item instanceof BlockElement) {
@@ -828,11 +807,11 @@ export namespace MdBuilder {
   }
 
   export class Blockquote<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (BlockElement<C> | string | InlineElement<C> | RawElement<C> | T)[]) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (InlineContent<T, C> | BlockElement<C>)[]) {
       super();
     }
 
-    push(...content: (BlockElement<C> | string | InlineElement<C> | RawElement<C> | T)[]) {
+    push(...content: (InlineContent<T, C> | BlockElement<C>)[]) {
       this.content.push(...content);
       return this;
     }
@@ -945,7 +924,7 @@ export namespace MdBuilder {
   }
 
   export class Footnote<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (BlockElement<C> | string | InlineElement<C> | RawElement<C> | T)[]) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (InlineContent<T, C> | BlockElement<C>)[]) {
       super();
     }
 
@@ -955,7 +934,7 @@ export namespace MdBuilder {
       return this;
     }
 
-    push(...content: (BlockElement<C> | string | InlineElement<C> | RawElement<C> | T)[]) {
+    push(...content: (InlineContent<T, C> | BlockElement<C>)[]) {
       this.content.push(...content);
       return this;
     }
@@ -1034,7 +1013,7 @@ export namespace MdBuilder {
     constructor(
       readonly md: ExtensibleMd<T, C>,
       readonly level: number | undefined,
-      readonly title: (string | InlineElement<C> | RawElement<C> | T)[],
+      readonly title: InlineContent<T, C>[],
       public headingId?: string
     ) {
       super();
@@ -1045,7 +1024,7 @@ export namespace MdBuilder {
       return this;
     }
 
-    concat(...content: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    concat(...content: InlineContent<T, C>[]) {
       this.title.push(...content);
       return this;
     }
@@ -1150,13 +1129,13 @@ export namespace MdBuilder {
   export class List<T = never, C extends Context = Context> extends BlockElement<C> {
     constructor(
       readonly md: ExtensibleMd<T, C>,
-      readonly items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C> | Task<T, C>)[],
+      readonly items: (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[],
       readonly mark?: "-" | "*" | "+" | number
     ) {
       super();
     }
 
-    push(...items: (string | InlineElement<C> | RawElement<C> | T | Task<T, C> | BlockElement<C>)[]) {
+    push(...items: (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]) {
       this.items.push(...items);
       return this;
     }
@@ -1207,11 +1186,11 @@ export namespace MdBuilder {
   }
 
   export class Paragraph<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: InlineContent<T, C>[]) {
       super();
     }
 
-    concat(...content: (string | InlineElement<C> | RawElement<C> | T)[]) {
+    concat(...content: InlineContent<T, C>[]) {
       this.content.push(...content);
       return this;
     }
