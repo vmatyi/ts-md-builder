@@ -98,8 +98,8 @@ function testRun() {
       (exp, to) => exp.toBe(to)
     );
     toStringTest(
-      md.t`!${md.t`${md.t``}${md.t``}${md.link("Link, but not an image", "http:\\localhost", "Link to localhost")}`}`,
-      `\\![Link, but not an image](http:\\localhost "Link to localhost")`,
+      md.t`!${md.t`${md.t``}${md.t``}${md.link("Link, but not an image", "http:\\localhost")}`}`,
+      `\\![Link, but not an image](http:\\localhost)`,
       (exp, to) => exp.toBe(to)
     );
     toStringTest(
@@ -137,7 +137,7 @@ function testRun() {
     );
     {
       const linkRef = md.linkRef("http://localhost", "Localhost");
-      const linkRefDup = md.linkUrl("http://localhost/dup", "Localhost [dup]");
+      const linkRefDup = md.linkUrl("http://localhost/dup");
       const linkRefMissing = md.linkUrl("http://localhost/missing", 'Localhost "missing"');
       const linkRefUnreferenced = md.linkUrl("http://localhost/unreferenced", "Localhost (unreferenced)");
       const linkReferenceTest = md.section(
@@ -170,7 +170,7 @@ linkRef: [linkRef][1] linkRef again: [linkRef][1] missing: [linkRefMissing][2] d
 
 [1]: <http://localhost> "Localhost"
 
-[3]: <http://localhost/dup> "Localhost [dup]"
+[3]: <http://localhost/dup>
 
 [4]: <http://localhost/unreferenced> "Localhost (unreferenced)"
 
@@ -181,7 +181,7 @@ linkRef: [linkRef][1] linkRef again: [linkRef][1] missing: [linkRefMissing][2] d
       });
     }
     {
-      const footnote = md.footnote("A footnote");
+      const footnote = md.footnote(md.t`A multi`, md.p`paragraph`, "foot-note");
       const footnoteDup = md.footnote(md.p`A duplicated footnote`);
       const footnoteMissing = md.footnote`A missing footnote`;
       const footnoteUnreferenced = md.footnote("http://localhost/unreferenced").push(md.p`Unreferenced, but added to the document...`);
@@ -212,7 +212,11 @@ linkRef: [linkRef][1] linkRef again: [linkRef][1] missing: [linkRefMissing][2] d
         const to = `
 footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
 
-[^1]: A footnote
+[^1]: A multi
+
+    paragraph
+
+    foot-note
 
 [^3]: A duplicated footnote
 
@@ -284,6 +288,7 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     (exp, to) => exp.toBe(to),
     { unorderedList: ["-", "+", "*"] }
   );
+  toStringTest(md.list([md.t`item 1`, md.t`item 2`]), `\n- item 1\n- item 2\n`, (exp, to) => exp.toBe(to), { unorderedList: [] });
   toStringTest(
     md.ordered([md.t`item 1`, md.orderedFrom(6, [md.t`item 1.6`, md.t`item 1.7`])]).push(md.t`item 2`, md.p`paragraph`, md.t`item 3`),
     `\n1. item 1\n\n    6. item 1.6\n    7. item 1.7\n\n2. item 2\n\n    paragraph\n\n3. item 3\n`,
@@ -291,6 +296,8 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   );
   toStringTest(md.hr(), `\n---\n`, (exp, to) => exp.toBe(to));
   toStringTest(md.hr(), `\n***\n`, (exp, to) => exp.toBe(to), { hr: ["---", "***"], headingLevel: 2 });
+  toStringTest(md.hr(), `\n\n`, (exp, to) => exp.toBe(to), { hr: ["---", "***", ""], headingLevel: 3 });
+  toStringTest(md.hr(), `\n---\n`, (exp, to) => exp.toBe(to), { hr: [], headingLevel: 3 });
   toStringTest(md.codeblock("{\n  // comment ```` ~~~~\n  goto 10;\n}"), "\n```\n{\n  // comment ```` ~~~~\n  goto 10;\n}\n```\n", (exp, to) =>
     exp.toBe(to)
   );
@@ -299,10 +306,17 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     "\n```Basic\n{\n  ```` ~~~~\n  goto 10;\n}\n```\n",
     (exp, to) => exp.toBe(to)
   );
+  toStringTest(
+    md.codeblock("{\n  ```` ~~~~\n  ").concat("indented codeblock:\n  goto 10;\n}").setLanguage("Basic"),
+    "\n    {\n      ```` ~~~~\n      indented codeblock:\n      goto 10;\n    }\n",
+    (exp, to) => exp.toBe(to),
+    { codeblock: { indent: "    " } }
+  );
   toStringTest(md.codeblock("{\n  ```` \n  goto 10;\n}"), "\n`````\n{\n  ```` \n  goto 10;\n}\n`````\n", (exp, to) => exp.toBe(to));
   toStringTest(md.codeblock("{\n  ^v^v \n  goto 10;\n}"), "\n^v^v^v^v\n{\n  ^v^v \n  goto 10;\n}\n^v^v^v^v\n", (exp, to) => exp.toBe(to), {
     codeblock: { fence: "^v^v" },
   });
+  toStringTest(md.code("{\n  ^v^v \n  goto 10;\n}"), "^v^v^v^v{\n ^v^v \n goto 10;\n}^v^v^v^v", (exp, to) => exp.toBe(to), { code: "^v^v" });
   toStringTest(md.blockquote`I've never said ${md.t`that`}`.push(md.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
   toStringTest(md.blockquote(md.t`I've never said that`).push(md.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
   toStringTest(md.blockquote(md.p`I've never said that`).push(md.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
@@ -348,12 +362,15 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     "throw"
   );
   toStringTest(md.p`Invalid type ${5 as unknown as string}`, "_toString called on Md", (exp, to) => exp.toThrowError(to), undefined, "throw");
-  const heading = md.h`Title`.setId("custom({id})");
-  toStringTest(
-    md.section(heading, md.p`Paragraph ${md.link("Title", heading)}`),
-    "\n# Title {#custom(\\{id\\})}\n\nParagraph [Title](#custom\\({id}\\))\n",
-    (exp, to) => exp.toBe(to)
-  );
+  {
+    const heading = md.h`Title`.setId("custom({id})");
+    toStringTest(
+      md.section(heading, md.p`Paragraph ${md.link("Title", heading)}`),
+      "\n# Title {#custom(\\{id\\})}\n\nParagraph [Title](#custom\\({id}\\))\n",
+      (exp, to) => exp.toBe(to)
+    );
+  }
+  toStringTest(md.link("Title", md.h`Heading-without-id`), "Heading-without-id", (exp, to) => exp.toThrowError(to), undefined, "throw");
   toStringTest(md.definition(md.t`term`, md.t`definition of the term`), "\nterm\n: definition of the term\n", (exp, to) => exp.toBe(to));
   toStringTest(
     md.t`smart escape :smiley:smiley:SMILEY: :s :smiley smiley: :) :@ C:/ http://`,
@@ -381,14 +398,14 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   );
   {
     const table = md.table(
-      [md.th`header 1`.setAlign(MdBuilder.LEFT), md.th`header 2`.setAlign(MdBuilder.CENTER), md.th`header |3|`.setAlign(MdBuilder.RIGHT)],
+      [md.t`header 1`, md.th`header 2`.setAlign(MdBuilder.CENTER), md.th`header |3|`.setAlign(MdBuilder.RIGHT)],
       [md.t`cell 1`, md.t`cell 2`, md.t`cell |3|`],
       md.tr(`cell 4`, md.t`cell 5`, md.t`cell |6|`)
     );
     toStringTest(
       table,
       "\n| header 1 | header 2 | header \\|3\\| |\n" +
-        "| :------- | :------: | -----------: |\n" +
+        "| -------- | :------: | -----------: |\n" +
         "| cell 1   |  cell 2  |   cell \\|3\\| |\n" +
         "| cell 4   |  cell 5  |   cell \\|6\\| |\n",
       (exp, to) => exp.toBe(to)

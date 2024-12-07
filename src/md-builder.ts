@@ -134,8 +134,7 @@ export namespace MdBuilder {
   export abstract class ExtensibleMd<T, C extends Context & Record<string, unknown>> {
     static _templateToArray<V>(template: string | TemplateStringsArray, values: V[]) {
       if (typeof template === "string") {
-        if (values.length) throw new Error("MdBuilder: function should be called with a TemplateString literal, or a single string parameter");
-        return [template];
+        return [template, ...values];
       } else {
         return template.flatMap((str, index) => {
           return index < values.length ? [str, values[index]] : [str];
@@ -266,8 +265,9 @@ export namespace MdBuilder {
     linkRef(href: string, title: string) {
       return this.linkUrl(href, title);
     }
+
     /** A link reference to be used in a reference-style md.link() */
-    linkUrl(href: string, title: string) {
+    linkUrl(href: string, title?: string) {
       return new LinkUrl<T, C>(this, href, title);
     }
 
@@ -756,7 +756,9 @@ export namespace MdBuilder {
             if (this.hrefOrTarget instanceof LinkUrl) {
               return `[${this.hrefOrTarget.getRefNumber(context, { referenced: peekLength === undefined })}]`;
             } else if (this.hrefOrTarget instanceof Heading) {
-              if (this.hrefOrTarget.headingId === undefined) throw new Error("MdBuilder - Heading has no id! heading:" + this.title);
+              if (!this.hrefOrTarget.headingId) {
+                throw new Error("MdBuilder - Heading has no id! Heading:" + this.hrefOrTarget.title);
+              }
               return `(#${this.hrefOrTarget.headingId.replace(/([()])/g, "\\$1")})`;
             } else {
               return `(${InlineElement._escapeUrl(this.hrefOrTarget, context, "(")}${
@@ -1167,7 +1169,6 @@ export namespace MdBuilder {
       if (typeof mark !== "string" && typeof mark !== "number") {
         // mark is a string[] to use different marks at different levels
         if (mark.length === 0) mark = "-";
-        else if (mark.length === 1) mark = mark[0];
         else mark = mark[Math.max((((listLevel - 1) % mark.length) + mark.length) % mark.length, 0)]; // % + % to handle negative levels
       }
       if (typeof mark === "string" && !mark.endsWith(" ")) mark += " ";
@@ -1312,6 +1313,7 @@ export namespace MdBuilder {
               peekLength,
               () => {
                 let str = InlineElement._toString(this.md, cell, context, peekLength).replace(/([|])/g, "\\$1");
+                /* c8 ignore next - width === undefined should never happen */
                 if (widths?.[index] !== undefined && (peekLength === undefined || str.length < peekLength)) {
                   const align = header?.[index].align ?? LEFT;
                   if (align === LEFT) str = str.padEnd(widths[index]);
