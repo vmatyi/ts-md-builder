@@ -50,6 +50,8 @@ export namespace MdBuilder {
     //   | Should it be \ or &#124; ? (extended syntax)
     /** set to false to escape all escapable characters (smartEscape mode is context-sensitive, leaving ~ # + \ - . ! characters unescaped wherever possible) */
     smartEscape: boolean;
+    /** Escape :emojis: in text (you can include emojis using ${md.emoji`smile`} ) set ot "allSpecChars" to escape all old-school character combinations like :^ (standard emoji combinations like :) are escaped by default) */
+    escapeEmojisInText: boolean | "allSpecChars";
     /** set to false to escape all RFC2396 non-standard characters in URL-s (smartUrlEscape mode only escapes the ( ) " characters, otherwise encodeURI is applied ) */
     smartUrlEscape: boolean;
     /** Add missing Footnote and linkUrl elements to the end of the document */
@@ -97,6 +99,7 @@ export namespace MdBuilder {
     orderedList: ".",
     unorderedList: "-",
     smartEscape: true,
+    escapeEmojisInText: true,
     smartUrlEscape: true,
     autoReferences: true,
     dedupReferences: false,
@@ -306,6 +309,13 @@ export namespace MdBuilder {
       return new Definition<T, C>(this, term, definition);
     }
 
+    /** Emoji: unescaped character sequence without limitations, thus can inject [link]() or any other markdown sequences.
+     * Would be futile to attempt safe escaping, as injecting character by character could circumvent any regexp checks anyway.
+     */
+    emoji(nameOrEmoji: string) {
+      return new Emoji<T, C>(this, nameOrEmoji);
+    }
+
     /** Image */
     img(alt: string, href: string, title?: string) {
       return new Link<T, C>(this, alt, href, title, true);
@@ -367,14 +377,21 @@ export namespace MdBuilder {
 
   export abstract class Element<C extends Context = Context> {
     protected static _escapeText(text: string, context: Pick<Context, "smartEscape" | "nl" | "escapeEmojisInText">) {
-      const escaped = context.smartEscape
+      let escaped = context.smartEscape
         ? text.replace(/([0-9A-Za-z]_[0-9A-Za-z])|([\\*_`[\]{}<>~])/g, (match, keeper, escape) => keeper ?? "\\" + escape)
         : text.replace(/([\\*_`|[\]{}<>~#+\-.!])/g, "\\$1");
+      if (context.escapeEmojisInText) {
+        escaped = context.smartEscape
+          ? context.escapeEmojisInText === "allSpecChars"
+            ? escaped.replace(/(:[^a-zA-Z0-9]|(?<![0-9A-Za-z]):[DOPosz](?![0-9A-Za-z]))/g, "\\$1")
+            : escaped.replace(/(:[0-9a-z_]+(?=:)|(?<![0-9A-Za-z]):[$()*/@DOPosz|](?![0-9A-Za-z]))/g, "\\$1")
+          : escaped.replace(/(:)/g, "\\$1");
+      }
       return escaped.replace(/\n/g, context.nl).replace(/(^|\n)  (?=\n)/g, "$1\\"); // empty lines doesn't do very well with double-space NL escaping
     }
 
-    protected static _escapeTitle(title: string, context: Pick<Context, "smartEscape" | "nl">) {
-      return context.smartEscape ? title.replace(/(")/g, "\\$1") : InlineElement._escapeText(title, { smartEscape: false, nl: "\n" });
+    protected static _escapeLinkTitle(title: string, context: Pick<Context, "smartEscape" | "nl" | "escapeEmojisInText">) {
+      return title.replace(/(")/g, "\\$1");
     }
 
     protected static _escapeUrl(urlStr: string, context: Pick<Context, "smartUrlEscape">, quote: "(" | "<") {
@@ -668,6 +685,17 @@ export namespace MdBuilder {
     }
   }
 
+  export class Emoji<T = never, C extends Context = Context> extends InlineElement<C> {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly nameOrEmoji: string) {
+      super();
+    }
+
+    protected _toString(context: C, peekLength: number | undefined) {
+      const nameOrEmoji = this.nameOrEmoji;
+      return /^[a-z_]+$/.test(nameOrEmoji) ? `:${nameOrEmoji}:` : nameOrEmoji;
+    }
+  }
+
   export class FootnoteReference<T = never, C extends Context = Context> extends InlineElement<C> {
     constructor(readonly footnote: Footnote<T, C>) {
       super();
@@ -723,7 +751,7 @@ export namespace MdBuilder {
               return `(#${this.hrefOrTarget.headingId.replace(/([()])/g, "\\$1")})`;
             } else {
               return `(${InlineElement._escapeUrl(this.hrefOrTarget, context, "(")}${
-                this.title ? ` "${Element._escapeTitle(this.title, context)}"` : ""
+                this.title ? ` "${Element._escapeLinkTitle(this.title, context)}"` : ""
               })`;
             }
           },
@@ -1100,7 +1128,7 @@ export namespace MdBuilder {
           peekLength,
           () => {
             return `[${this.getRefNumber(context, { included: peekLength === undefined })}]: <${Element._escapeUrl(this.href, context, "<")}>${
-              this.title ? ` "${Element._escapeTitle(this.title, context)}"` : ""
+              this.title ? ` "${Element._escapeLinkTitle(this.title, context)}"` : ""
             }`;
           },
           (remaining) => (peekLength = remaining)

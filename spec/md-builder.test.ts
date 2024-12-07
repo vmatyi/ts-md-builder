@@ -252,7 +252,7 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     const mdStr = md.p`!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~`.toString({
       smartEscape: false,
     });
-    const to = `\n\\!"\\#$%&'()\\*\\+,\\-\\./0123456789:;\\<=\\>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\[\\\\\\]^\\_\\\`abcdefghijklmnopqrstuvwxyz\\{\\|\\}\\~\n`;
+    const to = `\n\\!"\\#$%&'()\\*\\+,\\-\\./0123456789\\:;\\<=\\>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\[\\\\\\]^\\_\\\`abcdefghijklmnopqrstuvwxyz\\{\\|\\}\\~\n`;
     showDiff(mdStr, to);
     expect(mdStr).toBe(to);
   });
@@ -346,7 +346,31 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     "\n# Title {#custom(\\{id\\})}\n\nParagraph [Title](#custom\\({id}\\))\n",
     (exp, to) => exp.toBe(to)
   );
-  toStringTest(md.definition(md.t`smiley`, md.t`A smiling face, like :)`), "\nsmiley\n: A smiling face, like :)\n", (exp, to) => exp.toBe(to));
+  toStringTest(md.definition(md.t`term`, md.t`definition of the term`), "\nterm\n: definition of the term\n", (exp, to) => exp.toBe(to));
+  toStringTest(
+    md.t`smart escape :smiley:smiley:SMILEY: :s :smiley smiley: :) :@ C:/ http://`,
+    "smart escape \\:smiley\\:smiley:SMILEY: \\:s :smiley smiley: \\:) \\:@ C:/ http://",
+    (exp, to) => exp.toBe(to)
+  );
+  toStringTest(md.t`${md.emoji("smiley")} ${md.emoji(":smiley:")} ${md.emoji(":*")} ${md.emoji(":)")}`, ":smiley: :smiley: :* :)", (exp, to) =>
+    exp.toBe(to)
+  );
+  toStringTest(md.t`dumb escape :smiley: :smiley :) :@`, "dumb escape \\:smiley\\: \\:smiley \\:) \\:@", (exp, to) => exp.toBe(to), {
+    smartEscape: false,
+  });
+  toStringTest(md.t`dont't escape :smiley: :( :) :@`, "dont't escape :smiley: :( :) :@", (exp, to) => exp.toBe(to), { escapeEmojisInText: false });
+  // escaped: :$ :( :) :* :/ :@ :D :O :P :o :s :z :|
+  toStringTest(
+    md.t`smart smiley escape :! :" :# :$ :% :& :' :( :) :* :+ :, :- :. :/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :< := :> :? :@ :A :B :C :D :E :F :G :H :I :J :K :L :M :N :O :P :Q :R :S :T :U :V :W :X :Y :Z :[ :\ :\ :] :^ :_ :\\ :\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n :o :p :q :r :s :t :u :v :w :x :y :z :{ :| :} :~`,
+    `smart smiley escape :! :" :# \\:$ :% :& :' \\:( \\:) :\\* :+ :, :- :. \\:/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :\\< := :\\> :? \\:@ :A :B :C \\:D :E :F :G :H :I :J :K :L :M :N \\:O \\:P :Q :R :S :T :U :V :W :X :Y :Z :\\[ :\ :\ :\\] :^ :\\_ :\\\\ :\\\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n \\:o :p :q :r \\:s :t :u :v :w :x :y \\:z :\\{ \\:| :\\} :\\~`,
+    (exp, to) => exp.toBe(to)
+  );
+  toStringTest(
+    md.t`allSpecChars smiley escape :! :" :# :$ :% :& :' :( :) :* :+ :, :- :. :/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :< := :> :? :@ :A :B :C :D :E :F :G :H :I :J :K :L :M :N :O :P :Q :R :S :T :U :V :W :X :Y :Z :[ :\ :\ :] :^ :_ :\\ :\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n :o :p :q :r :s :t :u :v :w :x :y :z :{ :| :} :~`,
+    `allSpecChars smiley escape \\:! \\:" \\:# \\:$ \\:% \\:& \\:' \\:( \\:) \\:\\* \\:+ \\:, \\:- \\:. \\:/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 \\:: \\:; \\:\\< \\:= \\:\\> \\:? \\:@ :A :B :C \\:D :E :F :G :H :I :J :K :L :M :N \\:O \\:P :Q :R :S :T :U :V :W :X :Y :Z \\:\\[ \\:\ \\:\ \\:\\] \\:^ \\:\\_ \\:\\\\ \\:\\\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n \\:o :p :q :r \\:s :t :u :v :w :x :y \\:z \\:\\{ \\:| \\:\\} \\:\\~`,
+    (exp, to) => exp.toBe(to),
+    { escapeEmojisInText: "allSpecChars" }
+  );
 }
 
 testRun();
