@@ -13,5 +13,6 @@
     "sourceMap": true,
     "outDir": "./lib",
     "baseUrl": "."
-  }
+  },
+  "exclude": ["lib/**", "coverage/**", "vitest.config.ts"]
 }

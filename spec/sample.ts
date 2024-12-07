@@ -1,6 +1,6 @@
 import { md } from "../src/index";
 
-const sampleMarkdown = md.section(
+const templateStringMarkdown = md.section(
   md.h`Main section header`,
   md.p`The first parameter of a section is a header (or you can pass null if you don't want a header).
 This section has no parent, and heading level was not specified, thus will become ${md.i`Heading 1`}`,
@@ -25,8 +25,8 @@ for (let i=0; i<Infinity; i+=2) {}`,
   )
 );
 
-const sampleMarkdown2 = md.section(md.h`Dynamic content`);
-sampleMarkdown2.push(
+const dynamicMarkdown = md.section(md.h`Dynamic content`);
+dynamicMarkdown.push(
   md.p`You can dynamically build your content using `.concat(
     md.code`.push(...)`,
     md.t` on ${md.b`BlockElements`} and `,
@@ -36,14 +36,14 @@ sampleMarkdown2.push(
 );
 {
   const sampleList = md.list();
-  sampleMarkdown2.push(sampleList);
+  dynamicMarkdown.push(sampleList);
   for (let i = 1; i <= 3; i++) {
     const item = md.t`list item ${md.b`${"" + i}`}`;
     sampleList.push(item);
     for (let j = 1; j <= i; j++) item.concat` *`; // set @typescript-eslint/no-unused-expressions { "allowTaggedTemplates": true } to avoid a false positive: https://github.com/eslint/eslint/issues/8268
   }
 }
-sampleMarkdown2.push(md.codeblock(`// a code block...\n`).concat(`for (let i=0; i<Infinity; i+=2) {}`).setLanguage("js"));
+dynamicMarkdown.push(md.codeblock(`// a code block...\n`).concat(`for (let i=0; i<Infinity; i+=2) {}`).setLanguage("js"));
 
-console.log(md.blockquote(sampleMarkdown).toString());
-console.log(md.blockquote(sampleMarkdown2).toString());
+console.log(md.blockquote(templateStringMarkdown).toString());
+console.log(md.blockquote(dynamicMarkdown).toString());

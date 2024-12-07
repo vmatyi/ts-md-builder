@@ -1,6 +1,6 @@
 {
   "name": "ts-md-builder",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "A template for creating npm packages using TypeScript and VSCode",
   "repository": {
     "type": "git",
@@ -15,8 +15,10 @@
     "build": "tsc --project tsconfig.build.json",
     "clean": "rm -rf ./lib/",
     "lint": "eslint ./src/",
-    "prepare": "npm run build",
-    "noemit": "tsc --noEmit"
+    "prepare": "vitest run --coverage && npm run lint && npm run build",
+    "noemit": "tsc --noEmit",
+    "test": "vitest run --coverage && npm run lint",
+    "testloop": "vitest --coverage"
   },
   "author": {
     "name": "vmatyi",
@@ -33,8 +35,7 @@
     "url": "https://github.com/vmatyi/ts-md-builder/issues"
   },
   "homepage": "https://github.com/vmatyi/ts-md-builder#readme",
-  "config": {
-  },
+  "config": {},
   "lint-staged": {
     "*.ts": "eslint --cache --cache-location .eslintcache --fix"
   },
@@ -42,18 +43,19 @@
     "branches": [
       "main"
     ],
-    "plugins": [
-    ]
+    "plugins": []
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.17.0",
     "@typescript-eslint/parser": "^8.17.0",
+    "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-es": "^4.1.0",
     "eslint-plugin-prettier": "^4.2.1",
     "prettier": "^2.8.7",
     "prettier-eslint": "^15.0.1",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "vitest": "^2.1.8"
   }
 }
