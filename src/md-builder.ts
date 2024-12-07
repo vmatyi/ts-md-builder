@@ -31,6 +31,7 @@ export namespace MdBuilder {
     // Line start:
     //   # heading
     //   > block quote
+    //   : definition
     //   = - Heading 1/2 underline
     //   2+space/tab List/Codeblock indentation (can't be escaped, should be trimmed/coalesced as they usually don't display anyway)
     //   * + - Unordered list
@@ -298,6 +299,10 @@ export namespace MdBuilder {
     /** Block code. For short, inline code use md.c`` */
     codeblock(code: string, language?: string) {
       return new Codeblock<T, C>(this, code, language);
+    }
+
+    definition(term: Text<never, Context>, definition: Text<never, Context>) {
+      return new Definition<T, C>(this, term, definition);
     }
 
     /** Image */
@@ -826,6 +831,29 @@ export namespace MdBuilder {
     }
   }
 
+  export class Definition<T = never, C extends Context = Context> extends BlockElement<C> {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly term: Text<T, C>, readonly definition: Text<T, C>) {
+      super();
+    }
+
+    protected _toString(context: C, peekLength: number | undefined) {
+      return (
+        Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining)) +
+        Element._peekPiece(
+          peekLength,
+          () => Paragraph.smartEscape(InlineElement._toString(this.md, this.term, context, peekLength), context),
+          (remaining) => (peekLength = remaining)
+        ) +
+        Element._peekPiece(
+          peekLength,
+          () => "\n: " + InlineElement._toString(this.md, this.definition, context, peekLength),
+          (remaining) => (peekLength = remaining)
+        ) +
+        Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
+      );
+    }
+  }
+
   export class Footnote<T = never, C extends Context = Context> extends BlockElement<C> {
     constructor(readonly md: ExtensibleMd<T, C>, readonly content: (BlockElement<C> | string | InlineElement<C> | RawElement<C> | T)[]) {
       super();
@@ -1089,7 +1117,7 @@ export namespace MdBuilder {
       return this;
     }
 
-    protected static smartEscapeRegExp = /((?<=^\s*|\n\s*)(?:[#>]|[=-]+[ \t]*(?=\n|$)|[*+-][ \t]))/g;
+    protected static smartEscapeRegExp = /((?<=^\s*|\n\s*)(?:[#>]|[=-]+[ \t]*(?=\n|$)|[*+-][ \t]|:(?=\s)))/g;
     protected static smartEscapeOrderedListRegExp = /((?<=^\s*|\n\s*)[0-9]+)([.)][ \t])/g;
     protected static smartTrimRegExp = /(?:(?<=^|\n)[ \t]+)|(?:[ \t]+(?=$))/g; // space can not be escaped, and space on line start doesn't usually display anyway
     protected static smartPipeRegExp = /(?<=^|\n)([ \t]*)([|]?[-:| \t]*---[-:| \t]*)(?=\n|$)/g; // some parser would accept it if there is at least one --- in the header separator

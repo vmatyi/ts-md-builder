@@ -66,6 +66,9 @@ function testRun() {
     toStringTest(md.t`1)Not an unordered list`, "1)Not an unordered list", (exp, to) => exp.toBe(to));
     toStringTest(md.t`  1. Not an unordered list`, " 1\\. Not an unordered list", (exp, to) => exp.toBe(to));
     toStringTest(md.t`1.Not an unordered list`, "1.Not an unordered list", (exp, to) => exp.toBe(to));
+    toStringTest(md.t`:Not a definition`, ":Not a definition", (exp, to) => exp.toBe(to));
+    toStringTest(md.t`: Not a definition`, "\\: Not a definition", (exp, to) => exp.toBe(to));
+    toStringTest(md.t` : Not a definition`, " \\: Not a definition", (exp, to) => exp.toBe(to));
     toStringTest(md.t`    Indented, but not code`, " Indented, but not code", (exp, to) => exp.toBe(to));
     toStringTest(md.t`	Not code, with Tab indentation`, " Not code, with Tab indentation", (exp, to) => exp.toBe(to));
     toStringTest(md.t`\`\`\``, "\\`\\`\\`", (exp, to) => exp.toBe(to));
