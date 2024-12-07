@@ -127,11 +127,17 @@ function testRun() {
       expect(mdStr).toBe(to);
     });
 
+    toStringTest(
+      md.link("A link", "http://localhost/missing", 'Localhost "missing"'),
+      '[A link](http://localhost/missing "Localhost \\"missing\\"")',
+      (exp, to) => exp.toBe(to),
+      { smartEscape: false }
+    );
     {
       const linkRef = md.linkRef("http://localhost", "Localhost");
-      const linkRefDup = md.linkUrl("http://localhost/dup", "Localhost dup");
-      const linkRefMissing = md.linkUrl("http://localhost/missing", "Localhost missing");
-      const linkRefUnreferenced = md.linkUrl("http://localhost/unreferenced", "Localhost unreferenced");
+      const linkRefDup = md.linkUrl("http://localhost/dup", "Localhost [dup]");
+      const linkRefMissing = md.linkUrl("http://localhost/missing", 'Localhost "missing"');
+      const linkRefUnreferenced = md.linkUrl("http://localhost/unreferenced", "Localhost (unreferenced)");
       const linkReferenceTest = md.section(
         null,
         md.p`linkRef: ${md.link("linkRef", linkRef)} linkRef again: ${md.link("linkRef", linkRef)} missing: ${md.link(
@@ -162,11 +168,11 @@ linkRef: [linkRef][1] linkRef again: [linkRef][1] missing: [linkRefMissing][2] d
 
 [1]: <http://localhost> "Localhost"
 
-[3]: <http://localhost/dup> "Localhost dup"
+[3]: <http://localhost/dup> "Localhost [dup]"
 
-[4]: <http://localhost/unreferenced> "Localhost unreferenced"
+[4]: <http://localhost/unreferenced> "Localhost (unreferenced)"
 
-[2]: <http://localhost/missing> "Localhost missing"
+[2]: <http://localhost/missing> "Localhost \\"missing\\""
 `;
         showDiff(mdStr, to);
         expect(mdStr).toBe(to);
