@@ -323,6 +323,10 @@ export namespace MdBuilder {
     orderedFrom(start: number, items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[]) {
       return new List<T, C>(this, items, start);
     }
+
+    task(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+      return new Task<T, C>(this, ExtensibleMd._templateToArray(content, values));
+    }
   }
 
   export class Md extends ExtensibleMd<never, Context> {
@@ -488,6 +492,8 @@ export namespace MdBuilder {
 
   /** An unprocessed element, will output it's content without any transformations. Useful for embedding raw html. */
   export class RawElement<T = never, C extends Context = Context> extends Element<C> {
+    private readonly [typeduckSymbol] = RawElement;
+
     constructor(readonly md: ExtensibleMd<T, C>, public rawContent: string) {
       super();
     }
@@ -499,6 +505,45 @@ export namespace MdBuilder {
 
     _toString(context: C, peekLength: number | undefined) {
       return this.rawContent;
+    }
+  }
+
+  // ======================= Task Element ===========================
+
+  export class Task<T = never, C extends Context = Context> extends Element<C> {
+    private readonly [typeduckSymbol] = Task;
+
+    constructor(
+      readonly md: ExtensibleMd<T, C>,
+      readonly content: (string | InlineElement<C> | RawElement<C> | T)[],
+      public checked: boolean = false
+    ) {
+      super();
+    }
+
+    setChecked(checked = true) {
+      this.checked = checked;
+      return this;
+    }
+
+    concat(content: TemplateStringsArray, ...values: (string | InlineElement<C> | RawElement<C> | T)[]) {
+      this.content.push(...ExtensibleMd._templateToArray(content, values));
+      return this;
+    }
+
+    protected _toString(context: C, peekLength: number | undefined) {
+      return (
+        Element._peekPiece(peekLength, `[${this.checked ? "x" : " "}] `, (remaining) => (peekLength = remaining)) +
+        Element._peekPiece(
+          peekLength,
+          () => InlineElement._toString(this.md, this.content, context, peekLength),
+          (remaining) => (peekLength = remaining)
+        )
+      );
+    }
+
+    static _toString<T, C extends Context>(item: Task<T, C>, context: C, peekLength: number | undefined): string {
+      return item._toString(context, peekLength);
     }
   }
 
@@ -539,7 +584,7 @@ export namespace MdBuilder {
 
     static _toString<T, C extends Context>(
       md: ExtensibleMd<T, C>,
-      content: string | InlineElement<C> | RawElement<C> | T | (string | InlineElement<C> | RawElement<C> | T)[],
+      content: string | InlineElement<C> | RawElement<C> | T | Task<T, C> | (string | InlineElement<C> | RawElement<C> | T)[],
       context: C,
       peekLength: number | undefined
     ): string {
@@ -578,6 +623,8 @@ export namespace MdBuilder {
         return content._toString(context, peekLength);
       } else if (content instanceof RawElement) {
         return content._toString(context, peekLength);
+      } else if (content instanceof Task) {
+        return Task._toString(content, context, peekLength);
       } else {
         return ExtensibleMd._toString(md, content, context, peekLength);
       }
@@ -1063,13 +1110,13 @@ export namespace MdBuilder {
   export class List<T = never, C extends Context = Context> extends BlockElement<C> {
     constructor(
       readonly md: ExtensibleMd<T, C>,
-      readonly items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[],
+      readonly items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C> | Task<T, C>)[],
       readonly mark?: "-" | "*" | "+" | number
     ) {
       super();
     }
 
-    push(...items: (string | InlineElement<C> | RawElement<C> | T | BlockElement<C>)[]) {
+    push(...items: (string | InlineElement<C> | RawElement<C> | T | Task<T, C> | BlockElement<C>)[]) {
       this.items.push(...items);
       return this;
     }

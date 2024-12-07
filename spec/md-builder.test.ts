@@ -263,8 +263,10 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   );
 
   toStringTest(
-    md.list([md.t`item 1`, md.list([md.t`item 1.1`, md.t`item 1.2`])]).push(md.t`item 2`, md.p`paragraph`, md.t`item 3`),
-    `\n- item 1\n\n    - item 1.1\n    - item 1.2\n\n- item 2\n\n    paragraph\n\n- item 3\n`,
+    md
+      .list([md.t`item 1`, md.list([md.t`item 1.1`, md.t`item 1.2`])])
+      .push(md.task`item 2`.setChecked(), md.p`paragraph`, md.task`item`.concat` [3]`),
+    `\n- item 1\n\n    - item 1.1\n    - item 1.2\n\n- [x] item 2\n\n    paragraph\n\n- [ ] item \\[3\\]\n`,
     (exp, to) => exp.toBe(to)
   );
   toStringTest(
