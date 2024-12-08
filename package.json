@@ -12,13 +12,14 @@
     "lib/**"
   ],
   "scripts": {
-    "build": "npm run test && tsc --project tsconfig.build.json",
+    "build": "npm run readme && npm run test && tsc --project tsconfig.build.json",
     "compile": "tsc --project tsconfig.json -noEmit",
     "clean": "rm -rf ./lib/",
     "lint": "eslint ./src/",
     "prepare": "vitest run --coverage && npm run lint && npm run build",
     "noemit": "tsc --noEmit",
     "test": "npm run compile && vitest run --coverage && npm run lint",
+    "readme": "node -r ts-node/register spec/generate-readme.ts --emit",
     "testloop": "vitest --coverage"
   },
   "author": {
@@ -28,9 +29,11 @@
   "keywords": [
     "markdown",
     "builder",
-    "template",
-    "templateString",
-    "template-string"
+    "typescript",
+    "template string",
+    "template literals",
+    "extended syntax",
+    "extensible"
   ],
   "bugs": {
     "url": "https://github.com/vmatyi/ts-md-builder/issues"

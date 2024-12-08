@@ -5,7 +5,7 @@ export { MdBuilder } from "./md-builder";
 /** Markdown builder with more versatile call signatures, in particular allowing md.t(string).concat(string) type calls for building programmaticaly.
  *
  * For manual, template-based building you might want to consider mdTemplate (or md), which disallows the above calls, clearing possible confusion of
- * md.t`text ${md.b`bold`}` with md.t(`text ${md.b`bold`}`), as the second signature will cause the immediate evaluation of the templateString,
+ * md.t`text ${md.b`bold`}` with md.t(`text ${md.b`bold`}`), as the second signature will cause the immediate evaluation of the template literal,
  * converting the parameters into a string with default options and without context-specific processing.
  */
 export const mdBuilder = new MdBuilder.Md<MdBuilder.InlineContent<never, MdBuilder.Context>>();
@@ -15,7 +15,7 @@ export { mdBuilder as mdb };
  *
  * It prevents the accidental use of md.t(`text ${md.b`bold`}`) instead of md.t`text ${md.b`bold`}` as they have different meanings:
  * - md.t(`text ${md.b`bold`}`) will immediately convert the parameters into a string with default options and without context-specific processing,
- * - md.t`text ${md.b`bold`}` will defer the evaluation of the templateString until the markdown string is actually produced.
+ * - md.t`text ${md.b`bold`}` will defer the evaluation of the template literal until the markdown string is actually produced.
  *
  * For programmatical building you might want to consider mdBuilder (or mdb), which allows the more versatile calls.
  */

@@ -2,12 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Sample",
+      "name": "Readme",
       "request": "launch",
       "cwd": "${workspaceRoot}",
       "type": "node",
       "runtimeArgs": ["-r", "ts-node/register"],
-      "args": ["${workspaceRoot}/spec/sample.ts"]
+      "args": ["${workspaceRoot}/spec/generate-readme.ts"]
     },
     {
       "name": "Test-run",
