@@ -175,7 +175,7 @@ export namespace MdBuilder {
 
     // h(title: string): Heading<T, C>; - Would be nice, but would allow md.h(`${md.b("Title")`) by accident, which passes the evaluated string, not the TemplateString, causing troubles with custom Options and linkUrl-s
     /** Create a heading with automatically determined level from the document structure (nested sections) */
-    h(title: TemplateStringsArray, ...values: []) {
+    h(title: TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       return new Heading<T, C>(this, undefined, ExtensibleMd._templateToArray(title, values));
     }
 

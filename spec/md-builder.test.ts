@@ -252,11 +252,11 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   );
   toStringTest(
     md
-      .section(md.h`Title`)
+      .section(md.h`Title ${"1"}`)
       .push(md.h`Subtitle`)
       .push(md.hN(4, md.t`H4`))
       .push(md.h1`H1`, md.h2`H2`, md.h3`H3`, md.h4`H4`, md.h5`H5`, md.h6`H6`),
-    `\n# Title\n\n## Subtitle\n\n#### H4\n\n# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6\n`,
+    `\n# Title 1\n\n## Subtitle\n\n#### H4\n\n# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6\n`,
     (exp, to) => exp.toBe(to)
   );
 
