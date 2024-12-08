@@ -1,6 +1,6 @@
 {
   "name": "ts-md-builder",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "A template for creating npm packages using TypeScript and VSCode",
   "repository": {
     "type": "git",
@@ -20,7 +20,9 @@
     "noemit": "tsc --noEmit",
     "test": "npm run compile && vitest run --coverage && npm run lint",
     "readme": "node -r ts-node/register spec/generate-readme.ts --emit",
-    "testloop": "vitest --coverage"
+    "testloop": "vitest --coverage",
+    "cp": "npm run build && cp -rf README.md LICENSE package.json lib/ ../backend/node_modules/ts-md-builder/",
+    "copy": "npm run build && xcopy /Y README.md ..\\backend\\node_modules\\ts-md-builder\\ && xcopy /Y LICENSE ..\\backend\\node_modules\\ts-md-builder\\ && xcopy /Y package.json ..\\backend\\node_modules\\ts-md-builder\\ && xcopy /S /Y .\\lib ..\\backend\\node_modules\\ts-md-builder\\lib\\"
   },
   "author": {
     "name": "vmatyi",
