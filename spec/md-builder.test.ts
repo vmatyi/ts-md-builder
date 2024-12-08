@@ -4,7 +4,7 @@
 
 import { expect, test } from "vitest";
 
-import { md, MdBuilder } from "../src/index";
+import { mdb, MdBuilder } from "../src/index";
 
 function showDiff(a: string, b: string) {
   // Vitest is not very good at comparing whitespaces at line ends...
@@ -45,70 +45,70 @@ function toStringTest<C extends MdBuilder.Context>(
 
 function testRun() {
   if (true) {
-    toStringTest(md.t`# Not a heading`, "\\# Not a heading", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`#Not a heading either`, "\\#Not a heading either", (exp, to) => exp.toBe(to));
-    toStringTest(md.t` # Not a heading either`, " \\# Not a heading either", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`Still not heading\n=`, "Still not heading  \n\\=", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`Still not heading\n====`, "Still not heading  \n\\=\\=\\==", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`Still not heading\n-`, "Still not heading  \n\\-", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`>Not a quote`, "\\>Not a quote", (exp, to) => exp.toBe(to));
-    toStringTest(md.t` > No quoting`, " \\> No quoting", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`> > > No quoting`, "\\> \\> \\> No quoting", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`- Not a list`, "\\- Not a list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`-Still not a list`, "-Still not a list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`+ Not a list`, "\\+ Not a list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`+Still not a list`, "+Still not a list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t` +  Not a list`, " \\+  Not a list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t` +Not a list`, " +Not a list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`*Not list`, "\\*Not list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`* No list for old man`, "\\* No list for old man", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`1. Not an unordered list`, "1\\. Not an unordered list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`1. Not an unordered list`, "1\\. Not an unordered list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`  1) Not an unordered list`, " 1\\) Not an unordered list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`1)Not an unordered list`, "1)Not an unordered list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`  1. Not an unordered list`, " 1\\. Not an unordered list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`1.Not an unordered list`, "1.Not an unordered list", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`:Not a definition`, ":Not a definition", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`: Not a definition`, "\\: Not a definition", (exp, to) => exp.toBe(to));
-    toStringTest(md.t` : Not a definition`, " \\: Not a definition", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`    Indented, but not code`, " Indented, but not code", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`	Not code, with Tab indentation`, " Not code, with Tab indentation", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`\`\`\``, "\\`\\`\\`", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`\`\`\`\` @#$%!`, "\\`\\`\\`\\` @#$%!", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`~~~`, "\\~\\~\\~", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`# Not a heading`, "\\# Not a heading", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`#Not a heading either`, "\\#Not a heading either", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t` # Not a heading either`, " \\# Not a heading either", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`Still not heading\n=`, "Still not heading  \n\\=", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`Still not heading\n====`, "Still not heading  \n\\=\\=\\==", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`Still not heading\n-`, "Still not heading  \n\\-", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`>Not a quote`, "\\>Not a quote", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t` > No quoting`, " \\> No quoting", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`> > > No quoting`, "\\> \\> \\> No quoting", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`- Not a list`, "\\- Not a list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`-Still not a list`, "-Still not a list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`+ Not a list`, "\\+ Not a list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`+Still not a list`, "+Still not a list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t` +  Not a list`, " \\+  Not a list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t` +Not a list`, " +Not a list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`*Not list`, "\\*Not list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`* No list for old man`, "\\* No list for old man", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`1. Not an unordered list`, "1\\. Not an unordered list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`1. Not an unordered list`, "1\\. Not an unordered list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`  1) Not an unordered list`, " 1\\) Not an unordered list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`1)Not an unordered list`, "1)Not an unordered list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`  1. Not an unordered list`, " 1\\. Not an unordered list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`1.Not an unordered list`, "1.Not an unordered list", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`:Not a definition`, ":Not a definition", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`: Not a definition`, "\\: Not a definition", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t` : Not a definition`, " \\: Not a definition", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`    Indented, but not code`, " Indented, but not code", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`	Not code, with Tab indentation`, " Not code, with Tab indentation", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`\`\`\``, "\\`\\`\\`", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`\`\`\`\` @#$%!`, "\\`\\`\\`\\` @#$%!", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`~~~`, "\\~\\~\\~", (exp, to) => exp.toBe(to));
     toStringTest(
-      md.t`not _italic_ not **bold** not ~~strikethrough~~ not \`code\` not ~sub~ not ^super^ not ==highlight==`,
+      mdb.t`not _italic_ not **bold** not ~~strikethrough~~ not \`code\` not ~sub~ not ^super^ not ==highlight==`,
       "not \\_italic\\_ not \\*\\*bold\\*\\* not \\~\\~strikethrough\\~\\~ not \\`code\\` not \\~sub\\~ not \\^super\\^ not \\==highlight\\==",
       (exp, to) => exp.toBe(to)
     );
-    toStringTest(md.t`keep_underscore _in_the_middle_`, "keep_underscore \\_in_the_middle\\_", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`[Not a link](http://not.a.link)`, "\\[Not a link\\](http://not.a.link)", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`keep_underscore _in_the_middle_`, "keep_underscore \\_in_the_middle\\_", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`[Not a link](http://not.a.link)`, "\\[Not a link\\](http://not.a.link)", (exp, to) => exp.toBe(to));
     toStringTest(
-      md.t`![Neither a link nor an image](http://not.a.link "Not a title")`,
+      mdb.t`![Neither a link nor an image](http://not.a.link "Not a title")`,
       `!\\[Neither a link nor an image\\](http://not.a.link "Not a title")`,
       (exp, to) => exp.toBe(to)
     );
-    toStringTest(md.t`!`.concat` Doesn't look like an image...`, `! Doesn't look like an image...`, (exp, to) => exp.toBe(to));
-    toStringTest(md.t`<http://not.an.url/>`, "\\<http://not.an.url/\\>", (exp, to) => exp.toBe(to));
-    toStringTest(md.t`<not@an.email>`, "\\<not@an.email\\>", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`!`.concat` Doesn't look like an image...`, `! Doesn't look like an image...`, (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`<http://not.an.url/>`, "\\<http://not.an.url/\\>", (exp, to) => exp.toBe(to));
+    toStringTest(mdb.t`<not@an.email>`, "\\<not@an.email\\>", (exp, to) => exp.toBe(to));
 
     toStringTest(
-      md.t`!${md.link("Link, but not an image", "http:\\localhost", "Link to localhost")}`,
+      mdb.t`!${mdb.link("Link, but not an image", "http:\\localhost", "Link to localhost")}`,
       `\\![Link, but not an image](http:\\localhost "Link to localhost")`,
       (exp, to) => exp.toBe(to)
     );
     toStringTest(
-      md.t`!${md.t`${md.t``}${md.t``}${md.link("Link, but not an image", "http:\\localhost")}`}`,
+      mdb.t`!${mdb.t`${mdb.t``}${mdb.t``}${mdb.link("Link, but not an image", "http:\\localhost")}`}`,
       `\\![Link, but not an image](http:\\localhost)`,
       (exp, to) => exp.toBe(to)
     );
     toStringTest(
-      md.t`No!${md.raw`[Raw link, but not an image](http:\\localhost "Link to localhost")`}`,
+      mdb.t`No!${mdb.raw`[Raw link, but not an image](http:\\localhost "Link to localhost")`}`,
       `No\\![Raw link, but not an image](http:\\localhost "Link to localhost")`,
       (exp, to) => exp.toBe(to)
     );
     toStringTest(
-      md.t`
+      mdb.t`
 | Not      | A |  Table |
 | -------- | - | -----: |
 | Header   |   | Title  |
@@ -118,7 +118,7 @@ function testRun() {
       (exp, to) => exp.toBe(to)
     );
 
-    const linkRefLong = md.linkUrl(
+    const linkRefLong = mdb.linkUrl(
       "http://localhost/missing-missing-a-long-long-long-long-long-long-long-long-long-long-long-long-link-link-link-link-link-link-link-link-link-link",
       "Localhost missing"
     );
@@ -130,22 +130,22 @@ function testRun() {
     });
 
     toStringTest(
-      md.link("A link", "http://localhost/missing", 'Localhost "missing"'),
+      mdb.link("A link", "http://localhost/missing", 'Localhost "missing"'),
       '[A link](http://localhost/missing "Localhost \\"missing\\"")',
       (exp, to) => exp.toBe(to),
       { smartEscape: false }
     );
     {
-      const linkRef = md.linkRef("http://localhost", "Localhost");
-      const linkRefDup = md.linkUrl("http://localhost/dup");
-      const linkRefMissing = md.linkUrl("http://localhost/missing", 'Localhost "missing"');
-      const linkRefUnreferenced = md.linkUrl("http://localhost/unreferenced", "Localhost (unreferenced)");
-      const linkReferenceTest = md.section(
+      const linkRef = mdb.linkRef("http://localhost", "Localhost");
+      const linkRefDup = mdb.linkUrl("http://localhost/dup");
+      const linkRefMissing = mdb.linkUrl("http://localhost/missing", 'Localhost "missing"');
+      const linkRefUnreferenced = mdb.linkUrl("http://localhost/unreferenced", "Localhost (unreferenced)");
+      const linkReferenceTest = mdb.section(
         null,
-        md.p`linkRef: ${md.link("linkRef", linkRef)} linkRef again: ${md.link("linkRef", linkRef)} missing: ${md.link(
+        mdb.p`linkRef: ${mdb.link("linkRef", linkRef)} linkRef again: ${mdb.link("linkRef", linkRef)} missing: ${mdb.link(
           "linkRefMissing",
           linkRefMissing
-        )} duplicate: ${md.link("linkRefDup", linkRefDup)}`,
+        )} duplicate: ${mdb.link("linkRefDup", linkRefDup)}`,
         linkRef,
         linkRefDup,
         linkRefDup,
@@ -181,13 +181,13 @@ linkRef: [linkRef][1] linkRef again: [linkRef][1] missing: [linkRefMissing][2] d
       });
     }
     {
-      const footnote = md.footnote(md.t`A multi`, md.p`paragraph`, "foot-note");
-      const footnoteDup = md.footnote(md.p`A duplicated footnote`);
-      const footnoteMissing = md.footnote`A missing footnote`;
-      const footnoteUnreferenced = md.footnote("http://localhost/unreferenced").push(md.p`Unreferenced, but added to the document...`);
-      const footnoteTest = md.section(
+      const footnote = mdb.footnote(mdb.t`A multi`, mdb.p`paragraph`, "foot-note");
+      const footnoteDup = mdb.footnote(mdb.p`A duplicated footnote`);
+      const footnoteMissing = mdb.footnote`A missing footnote`;
+      const footnoteUnreferenced = mdb.footnote("Unreferenced").push(mdb.p`but added to the document...`);
+      const footnoteTest = mdb.section(
         null,
-        md.p`footnote ref: ${footnote.ref} ref again: ${footnote.ref} missing: ${footnoteMissing.ref} duplicate: ${footnoteDup.ref}`,
+        mdb.p`footnote ref: ${footnote.ref} ref again: ${footnote.ref} missing: ${footnoteMissing.ref} duplicate: ${footnoteDup.ref}`,
         footnote,
         footnoteDup,
         footnoteDup,
@@ -220,9 +220,9 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
 
 [^3]: A duplicated footnote
 
-[^4]: http://localhost/unreferenced
+[^4]: Unreferenced
 
-    Unreferenced, but added to the document...
+    but added to the document...
 
 [^2]: A missing footnote
 `;
@@ -232,36 +232,36 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     }
   }
 
-  toStringTest(md.h`Title`.concat(md.t` `.concat`${md.b`1`}`), `\n# Title **1**\n`, (exp, to) => exp.toBe(to));
-  toStringTest(md.url("http:\\\\localhost\\alma?chars=<[\\]>"), `<http:\\\\localhost\\alma?chars=%3C[\\]%3E>`, (exp, to) => exp.toBe(to));
-  toStringTest(md.url("http:\\\\localhost\\alma?chars=<[\\]>"), `<http:\\\\localhost\\alma?chars=%3C%5B\\%5D%3E>`, (exp, to) => exp.toBe(to), {
+  toStringTest(mdb.h`Title`.concat(mdb.t` `.concat`${mdb.b`1`}`), `\n# Title **1**\n`, (exp, to) => exp.toBe(to));
+  toStringTest(mdb.url("http:\\\\localhost\\alma?chars=<[\\]>"), `<http:\\\\localhost\\alma?chars=%3C[\\]%3E>`, (exp, to) => exp.toBe(to));
+  toStringTest(mdb.url("http:\\\\localhost\\alma?chars=<[\\]>"), `<http:\\\\localhost\\alma?chars=%3C%5B\\%5D%3E>`, (exp, to) => exp.toBe(to), {
     smartUrlEscape: false,
   });
-  toStringTest(md.t`${md.raw("* <html>").concat`[]`.concat("</html>")}`, `\\* <html>[]</html>`, (exp, to) => exp.toBe(to));
-  toStringTest(md.raw("* <html>").concat`[]`.concat("</html>"), `* <html>[]</html>`, (exp, to) => exp.toBe(to));
-  toStringTest(md.link("Link text", "http:\\\\localhost", "Link title"), `[Link text](http:\\\\localhost "Link title")`, (exp, to) => exp.toBe(to));
+  toStringTest(mdb.t`${mdb.raw("* <html>").concat`[]`.concat("</html>")}`, `\\* <html>[]</html>`, (exp, to) => exp.toBe(to));
+  toStringTest(mdb.raw("* <html>").concat`[]`.concat("</html>"), `* <html>[]</html>`, (exp, to) => exp.toBe(to));
+  toStringTest(mdb.link("Link text", "http:\\\\localhost", "Link title"), `[Link text](http:\\\\localhost "Link title")`, (exp, to) => exp.toBe(to));
   toStringTest(
-    md.p`${md.link("Reference-style link", md.linkUrl("http://localhost", "Localhost"))}`,
+    mdb.p`${mdb.link("Reference-style link", mdb.linkUrl("http://localhost", "Localhost"))}`,
     `\n[Reference-style link][1]\n\n[1]: <http://localhost> "Localhost"\n`,
     (exp, to) => exp.toBe(to)
   );
   toStringTest(
-    md.img("Image [alt]", "http:\\\\localhost\\image.jpg", "Image title"),
+    mdb.img("Image [alt]", "http:\\\\localhost\\image.jpg", "Image title"),
     `![Image \\[alt\\]](http:\\\\localhost\\image.jpg "Image title")`,
     (exp, to) => exp.toBe(to)
   );
   toStringTest(
-    md
-      .section(md.h`Title ${"1"}`)
-      .push(md.h`Subtitle`)
-      .push(md.hN(4, md.t`H4`))
-      .push(md.h1`H1`, md.h2`H2`, md.h3`H3`, md.h4`H4`, md.h5`H5`, md.h6`H6`),
-    `\n# Title 1\n\n## Subtitle\n\n#### H4\n\n# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6\n`,
+    mdb
+      .section(mdb.h`Title ${"1"}`)
+      .push(mdb.h`Subtitle`)
+      .push(mdb.hN(4, mdb.t`H4a`), mdb.hN(4, `H4b`))
+      .push(mdb.h1`H1`, mdb.h2(`H2`), mdb.h3`H3`, mdb.h4`H4`, mdb.h5`H5`, mdb.h6`H6`, mdb.h`H7`.setLevel(7)),
+    `\n# Title 1\n\n## Subtitle\n\n#### H4a\n\n#### H4b\n\n# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6\n\n####### H7\n`,
     (exp, to) => exp.toBe(to)
   );
 
   test("dumpEscape", () => {
-    const mdStr = md.p`!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~`.toString({
+    const mdStr = mdb.p`!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~`.toString({
       smartEscape: false,
     });
     const to = `\n\\!"\\#$%&'()\\*\\+,\\-\\./0123456789\\:;\\<=\\>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\[\\\\\\]\\^\\_\\\`abcdefghijklmnopqrstuvwxyz\\{\\|\\}\\~\n`;
@@ -270,138 +270,140 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   });
 
   toStringTest(
-    md.p`Reference`.concat(md.footnote("Footnote of reference").setId("refId").ref),
+    mdb.p`Reference`.concat(mdb.footnote("Footnote of reference").setId("refId").ref),
     `\nReference[^refId]\n\n[^refId]: Footnote of reference\n`,
     (exp, to) => exp.toBe(to)
   );
 
   toStringTest(
-    md
-      .list([md.t`item 1`, md.list([md.t`item 1.1`, md.t`item 1.2`])])
-      .push(md.task`item 2`.setChecked(), md.p`paragraph`, md.task`item`.concat` [3]`),
+    mdb
+      .list([mdb.t`item 1`, mdb.list([mdb.t`item 1.1`, mdb.t`item 1.2`])])
+      .push(mdb.task`item 2`.setChecked(), mdb.p`paragraph`, mdb.task`item`.concat` [3]`),
     `\n- item 1\n\n    - item 1.1\n    - item 1.2\n\n- [x] item 2\n\n    paragraph\n\n- [ ] item \\[3\\]\n`,
     (exp, to) => exp.toBe(to)
   );
   toStringTest(
-    md.list([md.t`item 1`, md.list([md.t`item 1.1`, md.t`item 1.2`])]).push(md.t`item 2`, md.p`paragraph`, md.t`item 3`),
+    mdb.list([mdb.t`item 1`, mdb.list([mdb.t`item 1.1`, mdb.t`item 1.2`])]).push(mdb.t`item 2`, mdb.p`paragraph`, mdb.t`item 3`),
     `\n- item 1\n\n    + item 1.1\n    + item 1.2\n\n- item 2\n\n    paragraph\n\n- item 3\n`,
     (exp, to) => exp.toBe(to),
     { unorderedList: ["-", "+", "*"] }
   );
-  toStringTest(md.list([md.t`item 1`, md.t`item 2`]), `\n- item 1\n- item 2\n`, (exp, to) => exp.toBe(to), { unorderedList: [] });
+  toStringTest(mdb.list([mdb.t`item 1`, mdb.t`item 2`]), `\n- item 1\n- item 2\n`, (exp, to) => exp.toBe(to), { unorderedList: [] });
   toStringTest(
-    md.ordered([md.t`item 1`, md.orderedFrom(6, [md.t`item 1.6`, md.t`item 1.7`])]).push(md.t`item 2`, md.p`paragraph`, md.t`item 3`),
-    `\n1. item 1\n\n    6. item 1.6\n    7. item 1.7\n\n2. item 2\n\n    paragraph\n\n3. item 3\n`,
+    mdb
+      .ordered([mdb.t`item 1`, mdb.orderedFrom(6, [mdb.t`item 1.6`, mdb.t`item 1.7`])])
+      .push(mdb.t`item 2`, mdb.p`paragraph`, mdb.list([mdb.t`item 2.1`, mdb.t`item 2.2`]).setOrdered(1)),
+    `\n1. item 1\n\n    6. item 1.6\n    7. item 1.7\n\n2. item 2\n\n    paragraph\n\n    1. item 2.1\n    2. item 2.2\n`,
     (exp, to) => exp.toBe(to)
   );
-  toStringTest(md.hr(), `\n---\n`, (exp, to) => exp.toBe(to));
-  toStringTest(md.hr(), `\n***\n`, (exp, to) => exp.toBe(to), { hr: ["---", "***"], headingLevel: 2 });
-  toStringTest(md.hr(), `\n\n`, (exp, to) => exp.toBe(to), { hr: ["---", "***", ""], headingLevel: 3 });
-  toStringTest(md.hr(), `\n---\n`, (exp, to) => exp.toBe(to), { hr: [], headingLevel: 3 });
-  toStringTest(md.codeblock("{\n  // comment ```` ~~~~\n  goto 10;\n}"), "\n```\n{\n  // comment ```` ~~~~\n  goto 10;\n}\n```\n", (exp, to) =>
+  toStringTest(mdb.hr(), `\n---\n`, (exp, to) => exp.toBe(to));
+  toStringTest(mdb.hr(), `\n***\n`, (exp, to) => exp.toBe(to), { hr: ["---", "***"], headingLevel: 2 });
+  toStringTest(mdb.hr(), `\n\n`, (exp, to) => exp.toBe(to), { hr: ["---", "***", ""], headingLevel: 3 });
+  toStringTest(mdb.hr(), `\n---\n`, (exp, to) => exp.toBe(to), { hr: [], headingLevel: 3 });
+  toStringTest(mdb.codeblock("{\n  // comment ```` ~~~~\n  goto 10;\n}"), "\n```\n{\n  // comment ```` ~~~~\n  goto 10;\n}\n```\n", (exp, to) =>
+    exp.toBe(to)
+  );
+  toStringTest(mdb.codeblock("{\n  ```` ~~~~\n  ", "Basic").concat("goto 10;\n}"), "\n```Basic\n{\n  ```` ~~~~\n  goto 10;\n}\n```\n", (exp, to) =>
     exp.toBe(to)
   );
   toStringTest(
-    md.codeblock("{\n  ```` ~~~~\n  ").concat("goto 10;\n}").setLanguage("Basic"),
-    "\n```Basic\n{\n  ```` ~~~~\n  goto 10;\n}\n```\n",
-    (exp, to) => exp.toBe(to)
-  );
-  toStringTest(
-    md.codeblock("{\n  ```` ~~~~\n  ").concat("indented codeblock:\n  goto 10;\n}").setLanguage("Basic"),
+    mdb.codeblock("{\n  ```` ~~~~\n  ").concat("indented codeblock:\n  goto 10;\n}").setLanguage("Basic"),
     "\n    {\n      ```` ~~~~\n      indented codeblock:\n      goto 10;\n    }\n",
     (exp, to) => exp.toBe(to),
     { codeblock: { indent: "    " } }
   );
-  toStringTest(md.codeblock("{\n  ```` \n  goto 10;\n}"), "\n`````\n{\n  ```` \n  goto 10;\n}\n`````\n", (exp, to) => exp.toBe(to));
-  toStringTest(md.codeblock("{\n  ^v^v \n  goto 10;\n}"), "\n^v^v^v^v\n{\n  ^v^v \n  goto 10;\n}\n^v^v^v^v\n", (exp, to) => exp.toBe(to), {
+  toStringTest(mdb.codeblock("{\n  ```` \n  goto 10;\n}"), "\n`````\n{\n  ```` \n  goto 10;\n}\n`````\n", (exp, to) => exp.toBe(to));
+  toStringTest(mdb.codeblock`{\n  ^v^v \n  goto 10;\n}`, "\n^v^v^v^v\n{\n  ^v^v \n  goto 10;\n}\n^v^v^v^v\n", (exp, to) => exp.toBe(to), {
     codeblock: { fence: "^v^v" },
   });
-  toStringTest(md.code("{\n  ^v^v \n  goto 10;\n}"), "^v^v^v^v{\n ^v^v \n goto 10;\n}^v^v^v^v", (exp, to) => exp.toBe(to), { code: "^v^v" });
-  toStringTest(md.blockquote`I've never said ${md.t`that`}`.push(md.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
-  toStringTest(md.blockquote(md.t`I've never said that`).push(md.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
-  toStringTest(md.blockquote(md.p`I've never said that`).push(md.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
-  toStringTest(md.blockquote(md.p`I've never said that`).push(md.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
+  toStringTest(mdb.code("{\n  ^v^v \n  goto 10;\n}"), "^v^v^v^v{\n ^v^v \n goto 10;\n}^v^v^v^v", (exp, to) => exp.toBe(to), { code: "^v^v" });
+  toStringTest(mdb.blockquote`I've never said ${mdb.t`that`}`.push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
+  toStringTest(mdb.blockquote(mdb.t`I've never said that`).push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
+  toStringTest(mdb.blockquote(mdb.p`I've never said that`).push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
+  toStringTest(mdb.blockquote(mdb.p`I've never said that`).push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
   toStringTest(
-    md.p`Text ${md.b`bold ${md.i`italic ${md.s`strikethrough ${md.sub`subscript`}${md.sup`superscript`}${md.highlight`highlight`}`}`}`}`,
+    mdb.p`Text ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`}${mdb.sup`superscript`}${mdb.highlight`highlight`}`}`}`}`,
     "\nText **bold *italic ~~strikethrough ~subscript~^superscript^==highlight==~~***\n",
     (exp, to) => exp.toBe(to)
   );
   toStringTest(
-    md.p`Text ${md.b`bold ${md.i`italic ${md.s`strikethrough ${md.sub`subscript`}${md.sup`superscript`}`}`}`}`,
+    mdb.p`Text ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`}${mdb.sup`superscript`}`}`}`}`,
     "\nText <b>bold <i>italic <s>strikethrough <sub>subscript</sub><sup>superscript</sup></s></i></b>\n",
     (exp, to) => exp.toBe(to),
     { smartEscape: false, bold: "<b>", italic: "<i>", strikethrough: "<s>", subscript: "<sub>", superscript: "<sup>" }
   );
   toStringTest(
-    md.p`Text ${md.code(" this is a code with ````-s").concat(" ending with a `")}`,
+    mdb.p`Text ${mdb.code(" this is a code with ````-s").concat(" ending with a `")}`,
     "\nText ````` this is a code with ````-s ending with a ` `````\n",
     (exp, to) => exp.toBe(to)
   );
 
   {
-    const ExtensionTest = class extends MdBuilder.ExtensibleMd<Date, { timeZone?: string } & MdBuilder.Context> {
-      protected _toString(content: Date, context: { timeZone?: string } & MdBuilder.Context): string {
+    const ExtensionTest = class extends MdBuilder.ExtensibleMd<Date, { locales?: string; timeZone?: string } & MdBuilder.Context> {
+      protected _toString(content: Date, context: { locales: string; timeZone?: string } & MdBuilder.Context): string {
         const date = new Date(content);
-        return date.toLocaleString("en-US", { timeZone: context.timeZone });
+        return date.toLocaleString(context.locales, { timeZone: context.timeZone });
       }
     };
     const emd = new ExtensionTest();
     const now = new Date();
     toStringTest(
-      emd.p`now is: ${now} in Auckland`,
+      emd.p`now is: ${now} ${mdb.raw`in Auckland`}`,
       "\nnow is: " + now.toLocaleString("en-US", { timeZone: "Pacific/Auckland" }) + " in Auckland\n",
       (exp, to) => exp.toBe(to),
-      { timeZone: "Pacific/Auckland" }
+      { locales: "en-US", timeZone: "Pacific/Auckland" }
     );
+    toStringTest(emd.raw`It is ${now} here`, "It is " + now.toLocaleString() + " here", (exp, to) => exp.toBe(to));
   }
   toStringTest(
-    md.p`${md.footnote`Footnote not included`.ref}`,
+    mdb.p`${mdb.footnote`Footnote not included`.ref}`,
     "Footnote not included",
     (exp, to) => exp.toThrowError(to),
     { autoReferences: false },
     "throw"
   );
-  toStringTest(md.p`Invalid type ${5 as unknown as string}`, "_toString called on Md", (exp, to) => exp.toThrowError(to), undefined, "throw");
+  toStringTest(mdb.p`Invalid type ${5 as unknown as string}`, "_toString called on Md", (exp, to) => exp.toThrowError(to), undefined, "throw");
   {
-    const heading = md.h`Title`.setId("custom({id})");
+    const heading = mdb.h`Title`.setId("custom({id})");
     toStringTest(
-      md.section(heading, md.p`Paragraph ${md.link("Title", heading)}`),
+      mdb.section(heading, mdb.p`Paragraph ${mdb.link("Title", heading)}`),
       "\n# Title {#custom(\\{id\\})}\n\nParagraph [Title](#custom\\({id}\\))\n",
       (exp, to) => exp.toBe(to)
     );
   }
-  toStringTest(md.link("Title", md.h`Heading-without-id`), "Heading-without-id", (exp, to) => exp.toThrowError(to), undefined, "throw");
-  toStringTest(md.definition(md.t`term`, md.t`definition of the term`), "\nterm\n: definition of the term\n", (exp, to) => exp.toBe(to));
+  toStringTest(mdb.link("Title", mdb.h`Heading-without-id`), "Heading-without-id", (exp, to) => exp.toThrowError(to), undefined, "throw");
+  toStringTest(mdb.definition(mdb.t`term`, mdb.t`definition of the term`), "\nterm\n: definition of the term\n", (exp, to) => exp.toBe(to));
   toStringTest(
-    md.t`smart escape :smiley:smiley:SMILEY: :s :smiley smiley: :) :@ C:/ http://`,
+    mdb.t`smart escape :smiley:smiley:SMILEY: :s :smiley smiley: :) :@ C:/ http://`,
     "smart escape \\:smiley\\:smiley:SMILEY: \\:s :smiley smiley: \\:) \\:@ C:/ http://",
     (exp, to) => exp.toBe(to)
   );
-  toStringTest(md.t`${md.emoji("smiley")} ${md.emoji(":smiley:")} ${md.emoji(":*")} ${md.emoji(":)")}`, ":smiley: :smiley: :* :)", (exp, to) =>
+  toStringTest(mdb.t`${mdb.emoji("smiley")} ${mdb.emoji`:smiley:`} ${mdb.emoji(":*")} ${mdb.emoji(":)")}`, ":smiley: :smiley: :* :)", (exp, to) =>
     exp.toBe(to)
   );
-  toStringTest(md.t`dumb escape :smiley: :smiley :) :@`, "dumb escape \\:smiley\\: \\:smiley \\:) \\:@", (exp, to) => exp.toBe(to), {
+  toStringTest(mdb.t`dumb escape :smiley: :smiley :) :@`, "dumb escape \\:smiley\\: \\:smiley \\:) \\:@", (exp, to) => exp.toBe(to), {
     smartEscape: false,
   });
-  toStringTest(md.t`dont't escape :smiley: :( :) :@`, "dont't escape :smiley: :( :) :@", (exp, to) => exp.toBe(to), { escapeEmojisInText: false });
+  toStringTest(mdb.t`dont't escape :smiley: :( :) :@`, "dont't escape :smiley: :( :) :@", (exp, to) => exp.toBe(to), { escapeEmojisInText: false });
   // escaped: :$ :( :) :* :/ :@ :D :O :P :o :s :z :|
   toStringTest(
-    md.t`smart smiley escape :! :" :# :$ :% :& :' :( :) :* :+ :, :- :. :/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :< := :> :? :@ :A :B :C :D :E :F :G :H :I :J :K :L :M :N :O :P :Q :R :S :T :U :V :W :X :Y :Z :[ :\ :\ :] :^ :_ :\\ :\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n :o :p :q :r :s :t :u :v :w :x :y :z :{ :| :} :~`,
+    mdb.t`smart smiley escape :! :" :# :$ :% :& :' :( :) :* :+ :, :- :. :/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :< := :> :? :@ :A :B :C :D :E :F :G :H :I :J :K :L :M :N :O :P :Q :R :S :T :U :V :W :X :Y :Z :[ :\ :\ :] :^ :_ :\\ :\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n :o :p :q :r :s :t :u :v :w :x :y :z :{ :| :} :~`,
     `smart smiley escape :! :" :# \\:$ :% :& :' \\:( \\:) :\\* :+ :, :- :. \\:/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :\\< := :\\> :? \\:@ :A :B :C \\:D :E :F :G :H :I :J :K :L :M :N \\:O \\:P :Q :R :S :T :U :V :W :X :Y :Z :\\[ :\ :\ :\\] :\\^ :\\_ :\\\\ :\\\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n \\:o :p :q :r \\:s :t :u :v :w :x :y \\:z :\\{ \\:| :\\} :\\~`,
     (exp, to) => exp.toBe(to)
   );
   toStringTest(
-    md.t`allSpecChars smiley escape :! :" :# :$ :% :& :' :( :) :* :+ :, :- :. :/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :< := :> :? :@ :A :B :C :D :E :F :G :H :I :J :K :L :M :N :O :P :Q :R :S :T :U :V :W :X :Y :Z :[ :\ :\ :] :^ :_ :\\ :\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n :o :p :q :r :s :t :u :v :w :x :y :z :{ :| :} :~`,
+    mdb.t`allSpecChars smiley escape :! :" :# :$ :% :& :' :( :) :* :+ :, :- :. :/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 :: :; :< := :> :? :@ :A :B :C :D :E :F :G :H :I :J :K :L :M :N :O :P :Q :R :S :T :U :V :W :X :Y :Z :[ :\ :\ :] :^ :_ :\\ :\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n :o :p :q :r :s :t :u :v :w :x :y :z :{ :| :} :~`,
     `allSpecChars smiley escape \\:! \\:" \\:# \\:$ \\:% \\:& \\:' \\:( \\:) \\:\\* \\:+ \\:, \\:- \\:. \\:/ :0 :1 :2 :3 :4 :5 :6 :7 :8 :9 \\:: \\:; \\:\\< \\:= \\:\\> \\:? \\:@ :A :B :C \\:D :E :F :G :H :I :J :K :L :M :N \\:O \\:P :Q :R :S :T :U :V :W :X :Y :Z \\:\\[ \\:\ \\:\ \\:\\] \\:\\^ \\:\\_ \\:\\\\ \\:\\\` :a :b :c :d :e :f :g :h :i :j :k :l :m :n \\:o :p :q :r \\:s :t :u :v :w :x :y \\:z \\:\\{ \\:| \\:\\} \\:\\~`,
     (exp, to) => exp.toBe(to),
     { escapeEmojisInText: "allSpecChars" }
   );
   {
-    const table = md.table(
-      [md.t`header 1`, md.th`header 2`.setAlign(MdBuilder.CENTER), md.th`header |3|`.setAlign(MdBuilder.RIGHT)],
-      [md.t`cell 1`, md.t`cell 2`, md.t`cell |3|`],
-      md.tr(`cell 4`, md.t`cell 5`, md.t`cell |6|`)
-    );
+    const table = mdb
+      .table(
+        [mdb.t`header 1`, mdb.th(`header 2`).setAlign(MdBuilder.CENTER), mdb.th`header |3|`.setAlign(MdBuilder.RIGHT)],
+        [mdb.t`cell 1`, mdb.t`cell 2`, mdb.t`cell |3|`]
+      )
+      .push(mdb.tr(`cell 4`, mdb.t`cell 5`).push(mdb.t`cell |6|`));
     toStringTest(
       table,
       "\n| header 1 | header 2 | header \\|3\\| |\n" +
@@ -416,25 +418,25 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     const nRows = 2;
     const header = [];
     for (let i = 0; i < nColumns; i++) {
-      header.push(md.th`header ${i + 1 + " ".padEnd(3 + i * 8, "+")}`.setAlign(i === 0 ? MdBuilder.LEFT : MdBuilder.CENTER));
+      header.push(mdb.th`header `.concat`${i + 1 + " ".padEnd(3 + i * 8, "+")}`.setAlign(i === 0 ? MdBuilder.LEFT : MdBuilder.CENTER));
     }
     const rows = [];
     for (let r = 0; r < nRows; r++) {
       const row = [];
       for (let c = 0; c < nColumns; c++) {
-        row.push(md.t`cell ${r + 1 + ""}.${c + 1 + ""}`);
+        row.push(mdb.t`cell ${r + 1 + ""}.${c + 1 + ""}`);
       }
-      rows.push(row);
+      if (r === 0) rows.push(row);
+      else rows.push(mdb.tr(...row));
     }
-    const table = md.table(header, ...rows);
-    toStringTest(
-      table,
+    const table = mdb.table(header, ...rows);
+    const tableResult =
       "\n| header 1 ++ | header 2 ++++++++++ | header 3 ++++++++++++++++++ |\n" +
-        "| :---------- | :-----------------: | :------------------: |\n" +
-        "| cell 1.1    |      cell 1.2       |       cell 1.3       |\n" +
-        "| cell 2.1    |      cell 2.2       |       cell 2.3       |\n",
-      (exp, to) => exp.toBe(to)
-    );
+      "| :---------- | :-----------------: | :------------------: |\n" +
+      "| cell 1.1    |      cell 1.2       |       cell 1.3       |\n" +
+      "| cell 2.1    |      cell 2.2       |       cell 2.3       |\n";
+    toStringTest(table, tableResult, (exp, to) => exp.toBe(to));
+    toStringTest(mdb.table(header).push(...rows), tableResult, (exp, to) => exp.toBe(to));
   }
   test("Markdown outputs", () => {
     console.log(testOutpus.join("\n\n"));

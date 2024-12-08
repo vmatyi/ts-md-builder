@@ -12,12 +12,13 @@
     "lib/**"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "npm run test && tsc --project tsconfig.build.json",
+    "compile": "tsc --project tsconfig.json -noEmit",
     "clean": "rm -rf ./lib/",
     "lint": "eslint ./src/",
     "prepare": "vitest run --coverage && npm run lint && npm run build",
     "noemit": "tsc --noEmit",
-    "test": "vitest run --coverage && npm run lint",
+    "test": "npm run compile && vitest run --coverage && npm run lint",
     "testloop": "vitest --coverage"
   },
   "author": {
