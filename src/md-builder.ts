@@ -129,7 +129,7 @@ export namespace MdBuilder {
     };
   }
 
-  export type InlineContent<T, C extends Context> = string | InlineElement<C> | RawElement<C> | T;
+  export type InlineContent<T, C extends Context> = string | InlineElement<C> | RawElement<T, C> | T;
 
   function isTemplateStringArray(v: unknown): v is TemplateStringsArray {
     return Array.isArray(v) && typeof v[0] === "string" && "raw" in v && Array.isArray(v.raw) && typeof v.raw[0] === "string";
@@ -266,9 +266,9 @@ export namespace MdBuilder {
      * Generated markdown: [text](href "title") or [text](#headerId "title") or [text][LinkUrl.refNr] style links
      */
     link(text: InlineContent<T, C>, href: string, title: string): Link<T, C>;
-    link(text: InlineContent<T, C>, target: LinkUrl | Heading): Link<T, C>;
-    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading, title?: string): Link<T, C>;
-    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading, title?: string) {
+    link(text: InlineContent<T, C>, target: LinkUrl | Heading<T, C>): Link<T, C>;
+    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading<T, C>, title?: string): Link<T, C>;
+    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading<T, C>, title?: string) {
       return new Link<T, C>(this, text, hrefOrTarget, title);
     }
 
@@ -300,9 +300,15 @@ export namespace MdBuilder {
     }
 
     /** Block quote: "> Some quoted text..." */
-    blockquote(content0: Value0 | BlockElement, ...content: (InlineContent<T, C> | BlockElement)[]): Blockquote<T, C>;
+    blockquote(
+      content0: Value0 | BlockElement | RawElement<T, C>,
+      ...content: (InlineContent<T, C> | BlockElement | RawElement<T, C>)[]
+    ): Blockquote<T, C>;
     blockquote(content: TemplateStringsArray, ...values: InlineContent<T, C>[]): Blockquote<T, C>;
-    blockquote(content: (Value0 | BlockElement) | TemplateStringsArray, ...values: (InlineContent<T, C> | BlockElement)[]) {
+    blockquote(
+      content: (Value0 | BlockElement | RawElement<T, C>) | TemplateStringsArray,
+      ...values: (InlineContent<T, C> | BlockElement | RawElement<T, C>)[]
+    ) {
       if (typeof content === "string" || content instanceof InlineElement || content instanceof RawElement || content instanceof BlockElement) {
         return new Blockquote<T, C>(this, [content, ...values]);
       } else {
@@ -333,21 +339,33 @@ export namespace MdBuilder {
       return new Footnote<T, C>(this, ExtensibleMd._templateToArray(content, values));
     }
 
+    /** @deprecated use md.list(...items) instead */
+    list(items: (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]): List<T, C>;
     /** Unordered list (a list with bullet points, without numbering) */
-    list(items: (InlineContent<T, C> | BlockElement<C>)[] = []) {
-      return new List<T, C>(this, items);
+    list(...items: (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]): List<T, C>;
+    list(...items: [(InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]] | (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]): List<T, C> {
+      return new List<T, C>(this, items[0] instanceof Array ? items[0] : (items as (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]));
     }
 
+    /** @deprecated use md.ordered(...items) instead */
+    ordered(items: (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]): List<T, C>;
     /** Ordered list (a list with numbering). Identical to md.list(...).setOrdered() */
-    ordered(items: (InlineContent<T, C> | BlockElement<C>)[]) {
-      return new List<T, C>(this, items, 1);
+    ordered(...items: (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]): List<T, C>;
+    ordered(...items: [(InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]] | (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]): List<T, C> {
+      return new List<T, C>(this, items[0] instanceof Array ? items[0] : (items as (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]), 1);
     }
 
+    /** @deprecated use md.list(...items).setOrdered(start) instead */
+    orderedFrom(start: number, items: (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]): List<T, C>;
     /** Ordered list (a list with numbering starting from the specified value)
      * @deprecated Use list([...]).setOrdered(start) instead
      */
-    orderedFrom(start: number, items: (InlineContent<T, C> | BlockElement<C>)[]) {
-      return new List<T, C>(this, items, start);
+    orderedFrom(start: number, ...items: (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]): List<T, C>;
+    orderedFrom(
+      start: number,
+      ...items: [(InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]] | (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]
+    ): List<T, C> {
+      return new List<T, C>(this, items[0] instanceof Array ? items[0] : (items as (InlineContent<T, C> | Task<T, C> | BlockElement<C>)[]), start);
     }
 
     /** List item with a checkbox: - [x] text to be used in an md.list(...) */
@@ -371,11 +389,15 @@ export namespace MdBuilder {
     }
   }
 
-  export class Md<Value0 extends InlineContent<never, Context> = InlineElement> extends ExtensibleMd<never, Context, Value0> {
-    protected _toString(content: never, context: Context): never {
-      throw new Error(
-        `MdBuilder - ExtensibleMd _toString called on ${this.constructor.name}. Your document probably contains a value that is incompatible with the Md class or not handled properly by an extension. value: {${content}}`
-      );
+  export class Md<Value0 extends InlineContent<never, Context> = InlineElement> extends ExtensibleMd<number, Context, Value0> {
+    protected _toString(content: number, context: Context): string {
+      if (typeof content === "number") {
+        return content.toString();
+      } else {
+        throw new Error(
+          `MdBuilder - ExtensibleMd _toString called on ${this.constructor.name}. Your document probably contains a value that is incompatible with the Md class or not handled properly by an extension. value: {${content}}`
+        );
+      }
     }
   }
 
@@ -554,7 +576,7 @@ export namespace MdBuilder {
       return this;
     }
 
-    _toString(context: C, peekLength: number | undefined) {
+    protected _toString(context: C, peekLength: number | undefined) {
       return this.rawContent
         .map((item) =>
           Element._peekPiece(
@@ -564,6 +586,10 @@ export namespace MdBuilder {
           )
         )
         .join("");
+    }
+
+    static _toString<T, C extends Context>(item: RawElement<T, C>, context: C, peekLength: number | undefined): string {
+      return item._toString(context, peekLength);
     }
   }
 
@@ -678,7 +704,7 @@ export namespace MdBuilder {
       } else if (content instanceof InlineElement) {
         return content._toString(context, peekLength);
       } else if (content instanceof RawElement) {
-        return content._toString(context, peekLength);
+        return RawElement._toString(content, context, peekLength);
       } else if (content instanceof Task) {
         return Task._toString(content, context, peekLength);
       } else {
@@ -748,7 +774,7 @@ export namespace MdBuilder {
   export class Link<T = never, C extends Context = Context> extends InlineElement<C> {
     constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, href: string, title?: string, isImage?: boolean);
     constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, reference: LinkUrl, unused?: undefined, isImage?: boolean);
-    constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading, title?: string, isImage?: boolean);
+    constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading<T, C>, title?: string, isImage?: boolean);
     constructor(
       readonly md: ExtensibleMd<T, C>,
       readonly text: InlineContent<T, C>,
@@ -832,16 +858,20 @@ export namespace MdBuilder {
       return item._toString(context, peekLength);
     }
 
-    protected static _groupElements<C extends Context, T>(content: (InlineContent<T, C> | BlockElement<C>)[]) {
+    protected static _groupElements<C extends Context, T, V extends InlineContent<T, C> | BlockElement<C> | RawElement<T, C>>(content: V[]) {
       let inlines: InlineContent<T, C>[] = [];
-      const blocks: (BlockElement<C> | typeof inlines)[] = [];
+      const blocks: (Exclude<V, InlineContent<T, C>> | typeof inlines)[] = [];
       content.forEach((item) => {
         if (item instanceof BlockElement) {
           if (inlines.length) blocks.push(inlines);
           inlines = [];
-          blocks.push(item);
+          blocks.push(item as Exclude<V, InlineContent<T, C>>);
+        } else if (item instanceof RawElement) {
+          if (inlines.length) blocks.push(inlines);
+          inlines = [];
+          blocks.push(item as Exclude<V, InlineContent<T, C>>);
         } else {
-          inlines.push(item);
+          inlines.push(item as Exclude<V, BlockElement<C> | RawElement<T, C>>);
         }
       });
       if (inlines.length) blocks.push(inlines);
@@ -850,7 +880,7 @@ export namespace MdBuilder {
   }
 
   export class Blockquote<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (InlineContent<T, C> | BlockElement<C>)[]) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (InlineContent<T, C> | BlockElement<C> | RawElement<T, C>)[]) {
       super();
     }
 
@@ -863,28 +893,22 @@ export namespace MdBuilder {
       const blockquote = context.blockquote;
       const blocks = BlockElement._groupElements(this.content);
       return blocks
-        .map((block, index) => {
-          if (block instanceof BlockElement) {
-            return (
-              Element._peekPiece(peekLength, index === 0 ? "" : blockquote, (remaining) => (peekLength = remaining)) +
-              Element._peekPiece(
-                peekLength,
-                () => BlockElement._toString(block, context, peekLength).replace(/\n(?!$)/g, "\n" + blockquote),
-                (remaining) => (peekLength = remaining)
-              )
-            );
-          } else {
-            return (
-              Element._peekPiece(peekLength, "\n" + blockquote, (remaining) => (peekLength = remaining)) +
-              Element._peekPiece(
-                peekLength,
-                () => InlineElement._toString(this.md, block, context, peekLength).replace(/\n/g, "\n" + blockquote),
-                (remaining) => (peekLength = remaining)
-              ) +
-              Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
-            );
-          }
-        })
+        .map(
+          (item, index, array) =>
+            Element._peekPiece(peekLength, "\n" + blockquote, (remaining) => (peekLength = remaining)) +
+            Element._peekPiece(
+              peekLength,
+              () =>
+                (item instanceof BlockElement
+                  ? BlockElement._toString(item, context, peekLength).replace(/^\n|\n$/g, "")
+                  : item instanceof RawElement
+                  ? RawElement._toString(item, context, peekLength)
+                  : InlineElement._toString(this.md, item, context, peekLength)
+                ).replace(/\n/g, "\n" + blockquote),
+              (remaining) => (peekLength = remaining)
+            ) +
+            Element._peekPiece(peekLength, "\n" + (index < array.length - 1 ? blockquote : ""), (remaining) => (peekLength = remaining))
+        )
         .join("");
     }
   }
@@ -1359,8 +1383,9 @@ export namespace MdBuilder {
                   if (align === LEFT) str = str.padEnd(widths[index]);
                   else if (align === RIGHT) str = str.padStart(widths[index]);
                   else {
-                    const leftPadding = Math.floor((widths[index] - str.length) / 2);
-                    str = " ".repeat(leftPadding) + str + " ".repeat(widths[index] - str.length - leftPadding);
+                    const padding = Math.max(widths[index] - str.length, 0);
+                    const leftPadding = Math.floor(padding / 2);
+                    str = " ".repeat(leftPadding) + str + " ".repeat(padding - leftPadding);
                   }
                 }
                 return str;

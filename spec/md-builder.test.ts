@@ -238,7 +238,11 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     smartUrlEscape: false,
   });
   toStringTest(mdb.t`${mdb.raw("* <html>").concat`[]`.concat("</html>")}`, `\\* <html>[]</html>`, (exp, to) => exp.toBe(to));
-  toStringTest(mdb.raw("* <html>").concat`[]`.concat("</html>"), `* <html>[]</html>`, (exp, to) => exp.toBe(to));
+  toStringTest(
+    mdb.blockquote(mdb.raw("* <html>").concat`[]`, "some Array[]", mdb.raw`</html>`),
+    `\n> * <html>[]\n> \n> some Array\\[\\]\n> \n> </html>\n`,
+    (exp, to) => exp.toBe(to)
+  );
   toStringTest(mdb.link("Link text", "http:\\\\localhost", "Link title"), `[Link text](http:\\\\localhost "Link title")`, (exp, to) => exp.toBe(to));
   toStringTest(
     mdb.p`${mdb.link("Reference-style link", mdb.linkUrl("http://localhost", "Localhost"))}`,
@@ -277,7 +281,7 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
 
   toStringTest(
     mdb
-      .list([mdb.t`item 1`, mdb.list([mdb.t`item 1.1`, mdb.t`item 1.2`])])
+      .list(mdb.t`item 1`, mdb.list(mdb.t`item 1.1`, mdb.t`item 1.2`))
       .push(mdb.task`item 2`.setChecked(), mdb.p`paragraph`, mdb.task`item`.concat` [3]`),
     `\n- item 1\n\n    - item 1.1\n    - item 1.2\n\n- [x] item 2\n\n    paragraph\n\n- [ ] item \\[3\\]\n`,
     (exp, to) => exp.toBe(to)
@@ -294,6 +298,11 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
       .ordered([mdb.t`item 1`, mdb.orderedFrom(6, [mdb.t`item 1.6`, mdb.t`item 1.7`])])
       .push(mdb.t`item 2`, mdb.p`paragraph`, mdb.list([mdb.t`item 2.1`, mdb.t`item 2.2`]).setOrdered(1)),
     `\n1. item 1\n\n    6. item 1.6\n    7. item 1.7\n\n2. item 2\n\n    paragraph\n\n    1. item 2.1\n    2. item 2.2\n`,
+    (exp, to) => exp.toBe(to)
+  );
+  toStringTest(
+    mdb.ordered(mdb.t`item 1`, mdb.orderedFrom(6, mdb.t`item 1.6`, mdb.t`item 1.7`)),
+    `\n1. item 1\n\n    6. item 1.6\n    7. item 1.7\n`,
     (exp, to) => exp.toBe(to)
   );
   toStringTest(mdb.hr(), `\n---\n`, (exp, to) => exp.toBe(to));
@@ -348,7 +357,7 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     const emd = new ExtensionTest();
     const now = new Date();
     toStringTest(
-      emd.p`now is: ${now} ${mdb.raw`in Auckland`}`,
+      emd.p`now is: ${now} ${emd.raw`in Auckland`}`,
       "\nnow is: " + now.toLocaleString("en-US", { timeZone: "Pacific/Auckland" }) + " in Auckland\n",
       (exp, to) => exp.toBe(to),
       { locales: "en-US", timeZone: "Pacific/Auckland" }
@@ -362,7 +371,7 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     { autoReferences: false },
     "throw"
   );
-  toStringTest(mdb.p`Invalid type ${5 as unknown as string}`, "_toString called on Md", (exp, to) => exp.toThrowError(to), undefined, "throw");
+  toStringTest(mdb.p`Invalid type ${null as unknown as string}`, "_toString called on Md", (exp, to) => exp.toThrowError(to), undefined, "throw");
   {
     const heading = mdb.h`Title`.setId("custom({id})");
     toStringTest(
@@ -418,7 +427,7 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     const nRows = 2;
     const header = [];
     for (let i = 0; i < nColumns; i++) {
-      header.push(mdb.th`header `.concat`${i + 1 + " ".padEnd(3 + i * 8, "+")}`.setAlign(i === 0 ? MdBuilder.LEFT : MdBuilder.CENTER));
+      header.push(mdb.th`header `.concat`${i + 1}${" ".padEnd(3 + i * 8, "+")}`.setAlign(i === 0 ? MdBuilder.LEFT : MdBuilder.CENTER));
     }
     const rows = [];
     for (let r = 0; r < nRows; r++) {
