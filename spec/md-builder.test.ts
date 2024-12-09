@@ -17,7 +17,7 @@ function toStringTest<C extends MdBuilder.Context>(
   from: MdBuilder.Element<C>,
   to: string,
   toBe: (exp: ReturnType<typeof expect<string>>, to: string) => void,
-  options?: MdBuilder.Context extends C ? MdBuilder.ToStringOptions<C> | undefined : MdBuilder.ToStringOptions<C>,
+  context?: MdBuilder.Context extends C ? MdBuilder.ToStringContext<C> | undefined : MdBuilder.ToStringContext<C>,
   onErrors?: MdBuilder.ErrorHandler<never> | "throw"
 ) {
   test(
@@ -27,12 +27,12 @@ function toStringTest<C extends MdBuilder.Context>(
     () => {
       if (onErrors === "throw") {
         toBe(
-          expect(() => from.toString(options ?? ({} as MdBuilder.ToStringOptions<C>))),
+          expect(() => from.toString(context ?? ({} as MdBuilder.ToStringContext<C>))),
           to
         );
       } else {
         const mdStr = from.toString(
-          options ?? ({} as MdBuilder.ToStringOptions<C>),
+          context ?? ({} as MdBuilder.ToStringContext<C>),
           onErrors ?? ((output, errors) => output + "\\\\ errors:" + errors.map((error) => error.errorType).join(","))
         );
         showDiff(mdStr, to);

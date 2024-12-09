@@ -84,7 +84,9 @@ export namespace MdBuilder {
     };
   };
 
-  export type ToStringOptions<C extends Context = Context> = Omit<C, keyof Context> & Partial<Pick<C, keyof Context>>;
+  export type ToStringContext<C extends Context = Context> = Omit<C, keyof Context> & Partial<Pick<C, keyof Context>>;
+  /** @deprecated Use ToStringContext<C> instead (renamed for clarity) */
+  export type ToStringOptions<C extends Context = Context> = ToStringContext<C>;
   export type ErrorHandler<T> = (output: string, errors: ErrorInfo[]) => T;
 
   export const LEFT = "left";
@@ -481,9 +483,9 @@ export namespace MdBuilder {
     }
 
     toString: Context extends C
-      ? <E = never>(context?: ToStringOptions<C>, onErrors?: ErrorHandler<E>) => string | E
-      : <E = never>(context: ToStringOptions<C>, onErrors?: ErrorHandler<E>) => string | E = <E = never>(
-      context: ToStringOptions<C> = {} as ToStringOptions<C>,
+      ? <E = never>(context?: ToStringContext<C>, onErrors?: ErrorHandler<E>) => string | E
+      : <E = never>(context: ToStringContext<C>, onErrors?: ErrorHandler<E>) => string | E = <E = never>(
+      context: ToStringContext<C> = {} as ToStringContext<C>,
       onErrors?: ErrorHandler<E>
     ) => {
       const _context = Object.entries(context).reduce((o, [k, v]) => {
