@@ -273,6 +273,27 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     expect(mdStr).toBe(to);
   });
 
+  test("noEscape", () => {
+    const mdStr = mdb.p`!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~`.toString({
+      smartEscape: "noEscape",
+    });
+    const to = `\n!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~\n`;
+    showDiff(mdStr, to);
+    expect(mdStr).toBe(to);
+  });
+
+  toStringTest(
+    mdb.section(
+      mdb.h`Title`,
+      mdb.p`Plain text toString ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`} ${mdb.sup`superscript`} ${mdb.highlight`highlight`}`}`}`}`,
+      mdb.list([mdb.t`item 1`, mdb.t`item 2`]),
+      mdb.codeblock("void main() { return 0; }").setLanguage("C")
+    ),
+    "\n# Title\n\nPlain text toString bold italic strikethrough subscript superscript highlight\n\n- item 1\n- item 2\n\n    void main() { return 0; }\n",
+    (exp, to) => exp.toBe(to),
+    MdBuilder.noFormattingNoEscapeOptions
+  );
+
   toStringTest(
     mdb.p`Reference`.concat(mdb.footnote("Footnote of reference").setId("refId").ref),
     `\nReference[^refId]\n\n[^refId]: Footnote of reference\n`,
@@ -331,13 +352,13 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   toStringTest(mdb.blockquote(mdb.p`I've never said that`).push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
   toStringTest(mdb.blockquote(mdb.p`I've never said that`).push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
   toStringTest(
-    mdb.p`Text ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`}${mdb.sup`superscript`}${mdb.highlight`highlight`}`}`}`}`,
-    "\nText **bold *italic ~~strikethrough ~subscript~^superscript^==highlight==~~***\n",
+    mdb.p`Text ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`} ${mdb.sup`superscript`} ${mdb.highlight`highlight`}`}`}`}`,
+    "\nText **bold *italic ~~strikethrough ~subscript~ ^superscript^ ==highlight==~~***\n",
     (exp, to) => exp.toBe(to)
   );
   toStringTest(
-    mdb.p`Text ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`}${mdb.sup`superscript`}`}`}`}`,
-    "\nText <b>bold <i>italic <s>strikethrough <sub>subscript</sub><sup>superscript</sup></s></i></b>\n",
+    mdb.p`Text ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`} ${mdb.sup`superscript`}`}`}`}`,
+    "\nText <b>bold <i>italic <s>strikethrough <sub>subscript</sub> <sup>superscript</sup></s></i></b>\n",
     (exp, to) => exp.toBe(to),
     { smartEscape: false, bold: "<b>", italic: "<i>", strikethrough: "<s>", subscript: "<sub>", superscript: "<sup>" }
   );

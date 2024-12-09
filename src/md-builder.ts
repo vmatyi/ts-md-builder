@@ -52,7 +52,7 @@ export namespace MdBuilder {
     // In tables
     //   | Should it be \ or &#124; ? (extended syntax)
     /** set to false to escape all escapable characters (smartEscape mode is context-sensitive, leaving ~ # + \ - . ! characters unescaped wherever possible) */
-    smartEscape: boolean;
+    smartEscape: boolean | "noEscape";
     /** Escape :emojis: in text (you can include emojis using ${md.emoji`smile`} ) set ot "allSpecChars" to escape all old-school character combinations like :^ (standard emoji combinations like :) are escaped by default) */
     escapeEmojisInText: boolean | "allSpecChars";
     /** set to false to escape all RFC2396 non-standard characters in URL-s (smartUrlEscape mode only escapes the ( ) " characters, otherwise encodeURI is applied ) */
@@ -92,7 +92,7 @@ export namespace MdBuilder {
   export const RIGHT = "right";
   export type TableHeaderAlign = typeof LEFT | typeof CENTER | typeof RIGHT;
 
-  const _defaultOptions: Omit<Context, "headingLevel" | "listLevel" | "_state"> = {
+  export const defaultOptions: Omit<Context, "headingLevel" | "listLevel" | "_state"> = {
     hr: "---",
     bold: "**",
     italic: "*",
@@ -115,9 +115,33 @@ export namespace MdBuilder {
     checkReferences: "strict",
   };
 
+  /** options for non-formatted output, easier to read without an MD viewer */
+  export const noFormattingNoEscapeOptions: typeof defaultOptions = {
+    bold: "",
+    code: "",
+    codeblock: { indent: "    " },
+    highlight: "",
+    hr: "--------------------------------",
+    italic: "",
+    blockquote: "> ",
+    nl: "\n",
+    orderedList: ". ",
+    strikethrough: "",
+    subscript: "",
+    superscript: "",
+    unorderedList: "-",
+    escapeEmojisInText: false,
+    footnoteIndent: "    ",
+    smartEscape: "noEscape",
+    smartUrlEscape: true,
+    autoReferences: true,
+    dedupReferences: false,
+    checkReferences: "strict",
+  };
+
   export function getDefaultContext(): Context {
     return {
-      ..._defaultOptions,
+      ...defaultOptions,
       headingLevel: 1,
       listLevel: 1,
       _state: {
@@ -430,10 +454,13 @@ export namespace MdBuilder {
 
   export abstract class Element<C extends Context = Context> {
     protected static _escapeText(text: string, context: Pick<Context, "smartEscape" | "nl" | "escapeEmojisInText">) {
-      let escaped = context.smartEscape
-        ? text.replace(/([0-9A-Za-z]_[0-9A-Za-z])|([\\*_`[\]{}<>~^]|=(?==))/g, (match, keeper, escape) => keeper ?? "\\" + escape)
-        : text.replace(/([\\*_`|[\]{}<>~^#+\-.!])/g, "\\$1");
-      if (context.escapeEmojisInText) {
+      let escaped =
+        context.smartEscape === "noEscape"
+          ? text
+          : context.smartEscape
+          ? text.replace(/([0-9A-Za-z]_[0-9A-Za-z])|([\\*_`[\]{}<>~^]|=(?==))/g, (match, keeper, escape) => keeper ?? "\\" + escape)
+          : text.replace(/([\\*_`|[\]{}<>~^#+\-.!])/g, "\\$1");
+      if (context.escapeEmojisInText && context.smartEscape !== "noEscape") {
         escaped = context.smartEscape
           ? context.escapeEmojisInText === "allSpecChars"
             ? escaped.replace(/(:[^a-zA-Z0-9]|(?<![0-9A-Za-z]):[DOPosz](?![0-9A-Za-z]))/g, "\\$1")
@@ -454,10 +481,10 @@ export namespace MdBuilder {
     }
 
     toString: Context extends C
-      ? <T = never>(context?: ToStringOptions<C>, onErrors?: ErrorHandler<T>) => string | T
-      : <T = never>(context: ToStringOptions<C>, onErrors?: ErrorHandler<T>) => string | T = <T = never>(
+      ? <E = never>(context?: ToStringOptions<C>, onErrors?: ErrorHandler<E>) => string | E
+      : <E = never>(context: ToStringOptions<C>, onErrors?: ErrorHandler<E>) => string | E = <E = never>(
       context: ToStringOptions<C> = {} as ToStringOptions<C>,
-      onErrors?: ErrorHandler<T>
+      onErrors?: ErrorHandler<E>
     ) => {
       const _context = Object.entries(context).reduce((o, [k, v]) => {
         if (v !== undefined) {
@@ -467,7 +494,7 @@ export namespace MdBuilder {
       }, getDefaultContext()) as C;
 
       let output = this._toString(_context, undefined);
-      if (this instanceof InlineElement && _context.smartEscape) {
+      if (this instanceof InlineElement && _context.smartEscape === true) {
         output = Paragraph.smartEscape(output, _context);
       }
 
@@ -683,7 +710,7 @@ export namespace MdBuilder {
               peekLength,
               () => {
                 let str = this._toString(md, item, context, peekLength);
-                if (context.smartEscape && str.endsWith("!")) {
+                if (context.smartEscape === true && str.endsWith("!")) {
                   for (let idx = index + 1; idx < content.length; idx++) {
                     // avoid concatenating a trailing "...!" with a "[..." link which would turn it into an Image
                     const peekStr = InlineElement._toString(md, content[idx], context, 1);
@@ -1030,10 +1057,7 @@ export namespace MdBuilder {
 
     describe(context: C) {
       const descLength = 160;
-      const peekStr = this._toString(
-        { ...context, ..._defaultOptions, smartEscape: true, smartUrlEscape: true, dedupReferences: false },
-        descLength + 1
-      ).trim();
+      const peekStr = this._toString({ ...context, ...defaultOptions, dedupReferences: false }, descLength + 1).trim();
       return MdBuilder.trimLength(peekStr, descLength);
     }
 
@@ -1168,10 +1192,7 @@ export namespace MdBuilder {
 
     _describe(context: C) {
       const descLength = 160;
-      let peekStr = this._toString(
-        { ...context, ..._defaultOptions, smartEscape: true, smartUrlEscape: true, dedupReferences: false },
-        descLength + 1
-      );
+      let peekStr = this._toString({ ...context, ...defaultOptions, dedupReferences: false }, descLength + 1);
       if (peekStr.length >= descLength) peekStr = peekStr.trim().substring(0, descLength - 1) + "…";
       else peekStr = peekStr.trim();
       return peekStr;
@@ -1276,7 +1297,9 @@ export namespace MdBuilder {
     protected static smartTrimRegExp = /(?:(?<=^|\n)[ \t]+)|(?:[ \t]+(?=$))/g; // space can not be escaped, and space on line start doesn't usually display anyway
     protected static smartPipeRegExp = /(?<=^|\n)([ \t]*)([|]?[-:| \t]*---[-:| \t]*)(?=\n|$)/g; // some parser would accept it if there is at least one --- in the header separator
     static smartEscape<C extends Context>(content: string, context: C) {
-      if (context.smartEscape) {
+      if (context.smartEscape === "noEscape") {
+        return content;
+      } else if (context.smartEscape) {
         return content
           .replace(this.smartEscapeRegExp, "\\$1")
           .replace(this.smartEscapeOrderedListRegExp, "$1\\$2")
