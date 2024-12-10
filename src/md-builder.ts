@@ -184,8 +184,12 @@ export namespace MdBuilder {
     protected abstract _toString(content: T, context: C, peekLength: number | undefined): string;
 
     /** Create a section consisting of a heading and a list of blocks (paragraphs, code blocks, lists, etc.) / sub-sections */
-    section(heading: Heading<T, C> | null, ...content: BlockElement<C>[]) {
-      return new Section<T, C>(heading, content);
+    section(heading: Heading<T, C> | null, ...content: (InlineContent<T, C> | BlockElement<C>)[]) {
+      return new Section<T, C>(
+        this,
+        heading,
+        content.map((item) => (item instanceof RawElement ? item : item instanceof BlockElement ? item : this.p`${item}`))
+      );
     }
 
     // h(title: string): Heading<T, C>; - Would be nice, but would allow md.h(`${md.b("Title")`) by accident, which passes the evaluated string, not the TemplateString, causing troubles with custom Options and linkUrl-s
@@ -1326,7 +1330,7 @@ export namespace MdBuilder {
   }
 
   export class Section<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly heading: Heading<T, C> | null, readonly content: BlockElement<C>[]) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly heading: Heading<T, C> | null, readonly content: (RawElement<T, C> | BlockElement<C>)[]) {
       super();
     }
 
@@ -1345,7 +1349,16 @@ export namespace MdBuilder {
         .map((item) =>
           Element._peekPiece(
             peekLength,
-            () => BlockElement._toString(item, { ...context, headingLevel: (this.heading?.level ?? context.headingLevel) + 1 }, peekLength),
+            () => {
+              if (item instanceof RawElement) {
+                let str = RawElement._toString(item, context, peekLength);
+                if (str.length > 0) {
+                  if (!str.startsWith("\n")) str = "\n" + str;
+                  if (!str.endsWith("\n")) str += "\n";
+                }
+                return str;
+              } else return BlockElement._toString(item, { ...context, headingLevel: (this.heading?.level ?? context.headingLevel) + 1 }, peekLength);
+            },
             (remaining) => (peekLength = remaining)
           )
         )

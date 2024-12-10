@@ -402,6 +402,11 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
       (exp, to) => exp.toBe(to)
     );
   }
+  toStringTest(
+    mdb.section(null, "string", 5, mdb.t`inline`, mdb.url("noreply@noreply.com"), mdb.p`paragraph`, mdb.raw`- raw`, mdb.raw`\n- raw`),
+    "\nstring\n\n5\n\ninline\n\n<noreply@noreply.com>\n\nparagraph\n\n- raw\n\n- raw\n",
+    (exp, to) => exp.toBe(to)
+  );
   toStringTest(mdb.link("Title", mdb.h`Heading-without-id`), "Heading-without-id", (exp, to) => exp.toThrowError(to), undefined, "throw");
   toStringTest(mdb.definition(mdb.t`term`, mdb.t`definition of the term`), "\nterm\n: definition of the term\n", (exp, to) => exp.toBe(to));
   toStringTest(
