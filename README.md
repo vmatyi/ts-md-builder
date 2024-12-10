@@ -202,9 +202,9 @@ dynamicMarkdown.push(
 > 
 > # Dynamic content
 > 
-> You can dynamically build your content using ``.concat(...)`` on paragraphs and inline elements.``.push(...)`` on block contrainers (sectiions, lists, tables, footnotes, blockquotes) and 
+> You can dynamically build your content using `.concat(...)` on paragraphs and inline elements.`.push(...)` on block contrainers (sectiions, lists, tables, footnotes, blockquotes) and 
 > 
-> You can use the usual ``md`` or the ``mdb`` import. ``mdb`` allows additional call signatures: e.g. both ``md.t`text` `` and ``md.t("text")`` to make dynamic content building easier.
+> You can use the usual `md` or the `mdb` import. `mdb` allows additional call signatures: e.g. both ``md.t`text` `` and `md.t("text")` to make dynamic content building easier.
 > 
 > - list item **1** \*
 > - list item **2** \* \*
@@ -244,11 +244,11 @@ console.log(myMarkdownStr);
 
 ### Tagged template literals vs dynamic building
 
-The library exports two default builders: ``md`` and ``mdb`` which are functionally interchangeable.
+The library exports two default builders: `md` and `mdb` which are functionally interchangeable.
 
-The ``mdb`` import allows both ``md.t("text")`` and ``md.t`text` `` call signatures to make dynamic content building easier.
+The `mdb` import allows both `md.t("text")` and ``md.t`text` `` call signatures to make dynamic content building easier.
 
-The ``md`` import does not allow passing a string parameter when invoked with parentheses, to prevent the accidental use of  
+The `md` import does not allow passing a string parameter when invoked with parentheses, to prevent the accidental use of  
  ``md.t(`text ${md.b`bold`}`)`` instead of ``md.t`text ${md.b`bold`}` `` as they have different meanings:
 
 - ``md.t(`text ${md.b`bold`}`)`` will immediately convert the template literal into a string without context-aware processing,

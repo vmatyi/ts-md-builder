@@ -759,7 +759,7 @@ export namespace MdBuilder {
       const trimmedMark = mark.trim();
       if (trimmedMark.length) {
         const markChars = Array.from(new Set(trimmedMark.split("")));
-        let maxLength = trimmedMark.length;
+        let maxLength = 0;
         code.replace(new RegExp("((?:" + markChars.map((char) => escapeRegExpLiteral(char)).join("|") + ")+)", "g"), (fullMatch, markMatch) => {
           if (markMatch.length > maxLength) maxLength = markMatch.length;
           return fullMatch;
