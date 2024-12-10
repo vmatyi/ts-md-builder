@@ -184,11 +184,13 @@ export namespace MdBuilder {
     protected abstract _toString(content: T, context: C, peekLength: number | undefined): string;
 
     /** Create a section consisting of a heading and a list of blocks (paragraphs, code blocks, lists, etc.) / sub-sections */
-    section(heading: Heading<T, C> | null, ...content: (InlineContent<T, C> | BlockElement<C>)[]) {
+    section(heading: Heading<T, C> | null, ...content: (InlineContent<T, C> | BlockElement<C> | null)[]) {
       return new Section<T, C>(
         this,
         heading,
-        content.map((item) => (item instanceof RawElement ? item : item instanceof BlockElement ? item : this.p`${item}`))
+        content
+          .filter((item) => item !== null)
+          .map((item) => (item instanceof RawElement ? item : item instanceof BlockElement ? item : this.p`${item}`))
       );
     }
 
@@ -1334,8 +1336,12 @@ export namespace MdBuilder {
       super();
     }
 
-    push(...content: BlockElement<C>[]) {
-      this.content.push(...content);
+    push(...content: (InlineContent<T, C> | BlockElement<C> | null)[]) {
+      this.content.push(
+        ...content
+          .filter((item) => item !== null)
+          .map((item) => (item instanceof RawElement ? item : item instanceof BlockElement ? item : this.md.p`${item}`))
+      );
       return this;
     }
 

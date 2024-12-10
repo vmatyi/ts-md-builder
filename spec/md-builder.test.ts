@@ -403,8 +403,10 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     );
   }
   toStringTest(
-    mdb.section(null, "string", 5, mdb.t`inline`, mdb.url("noreply@noreply.com"), mdb.p`paragraph`, mdb.raw`- raw`, mdb.raw`\n- raw`),
-    "\nstring\n\n5\n\ninline\n\n<noreply@noreply.com>\n\nparagraph\n\n- raw\n\n- raw\n",
+    mdb
+      .section(null, "string", 5, null, mdb.t`inline`, mdb.p`paragraph`, mdb.raw`- raw`)
+      .push(mdb.url("noreply@noreply.com"), null, mdb.raw`\n- raw`),
+    "\nstring\n\n5\n\ninline\n\nparagraph\n\n- raw\n\n<noreply@noreply.com>\n\n- raw\n",
     (exp, to) => exp.toBe(to)
   );
   toStringTest(mdb.link("Title", mdb.h`Heading-without-id`), "Heading-without-id", (exp, to) => exp.toThrowError(to), undefined, "throw");
