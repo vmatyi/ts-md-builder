@@ -65,6 +65,11 @@ export namespace MdBuilder {
     dedupReferences: boolean;
     /** Link reference strictness. false - do not check, true - verify that all the References are included in the document, "strict" - also verify that ReferenceLinks are unique (the same MD Object was not included twice. It will still allow two with the same href) */
     checkReferences: boolean | "strict";
+    /** Trim the first bounding \n characters from the beginning and end of tagged template literals to allow passing them in a more readable form (you don't have to put content in the same line as your quotes).
+     *
+     * As a safeguard it is only applied on tagged template literals (e.g. md.t`\n...text\n`); string values (either in the form of md.t(`\n...text...\n`) or md.t`${"\n...text...\n"}`) are NOT affected!
+     */
+    trimFirstNls: boolean;
 
     /** Root heading level (1) */
     headingLevel: number;
@@ -112,6 +117,7 @@ export namespace MdBuilder {
     inlineNl: "<br>",
     orderedList: ".",
     unorderedList: "-",
+    trimFirstNls: false,
     smartEscape: true,
     escapeEmojisInText: true,
     smartUrlEscape: true,
@@ -136,6 +142,7 @@ export namespace MdBuilder {
     subscript: "",
     superscript: "",
     unorderedList: "-",
+    trimFirstNls: false,
     escapeEmojisInText: false,
     footnoteIndent: "    ",
     smartEscape: "noEscape",
@@ -159,20 +166,64 @@ export namespace MdBuilder {
     };
   }
 
-  export type InlineContent<T, C extends Context> = string | InlineElement<C> | RawElement<T, C> | T;
+  export type InlineContent<T, C extends Context> =
+    | string
+    | InlineElement<C>
+    | RawElement<T, C>
+    | TemplateStringContainer<string | InlineElement<C> | RawElement<T, C> | T>
+    | T;
+  export type InlineContentOrTemplateContainer<T, C extends Context> = InlineContent<T, C> | TemplateStringContainer<InlineContent<T, C>>;
 
   function isTemplateStringArray(v: unknown): v is TemplateStringsArray {
     return Array.isArray(v) && typeof v[0] === "string" && "raw" in v && Array.isArray(v.raw) && typeof v.raw[0] === "string";
   }
 
+  export class TemplateStringContainer<V> {
+    constructor(protected _values: (string | V)[]) {}
+
+    getValues(trimFirstNls: boolean | undefined) {
+      let values = this._values;
+      if (trimFirstNls && values.length > 0) {
+        const firstValueOrig = values[0];
+        const firstValueTrimmed = typeof firstValueOrig === "string" && firstValueOrig.startsWith("\n") ? firstValueOrig.substring(1) : undefined;
+        const lastValueOrig = (values.length === 1 ? firstValueTrimmed : undefined) ?? values[values.length - 1];
+        const lastValueTrimmed =
+          typeof lastValueOrig === "string" && (lastValueOrig.endsWith("\n") || lastValueOrig.endsWith(" ") || lastValueOrig.endsWith("\t"))
+            ? lastValueOrig.replace(/\n[ \t]*$/, "")
+            : undefined;
+        if (firstValueTrimmed !== undefined || (lastValueTrimmed !== undefined && lastValueTrimmed !== lastValueOrig)) {
+          values = Array.from(values);
+          if (firstValueTrimmed !== undefined) values[0] = firstValueTrimmed;
+          if (lastValueTrimmed !== undefined) values[values.length - 1] = lastValueTrimmed;
+        }
+      }
+      return values;
+    }
+  }
+
   export abstract class ExtensibleMd<T, C extends Context & Record<string, unknown>, Value0 extends InlineContent<T, C> = InlineContent<T, C>> {
-    static _templateToArray<V>(template: V | TemplateStringsArray, values: V[]) {
+    static _templateToArray<V>(template: V | TemplateStringsArray, values: V[], allowTemplateContainer: false): (string | V)[];
+    static _templateToArray<V>(template: V | TemplateStringsArray, values: V[]): (string | V | TemplateStringContainer<string | V>)[];
+    static _templateToArray<V>(
+      template: V | TemplateStringsArray,
+      values: V[],
+      allowTemplateContainer = true
+    ): (string | V | TemplateStringContainer<string | V>)[] {
       if (isTemplateStringArray(template)) {
-        return template.flatMap((str, index) => {
+        const array = template.flatMap((str, index) => {
           return index < values.length ? [str, values[index]] : [str];
         });
+        return allowTemplateContainer ? [new TemplateStringContainer(array)] : array;
       } else {
         return [template, ...values.filter((item) => item !== undefined)];
+      }
+    }
+
+    static _templateToString(template: string | TemplateStringsArray, values: (string | undefined)[]): string {
+      if (isTemplateStringArray(template)) {
+        return template.flatMap((str, index) => (index < values.length ? [str, values[index]] : [str])).join("");
+      } else {
+        return template + values.filter((item) => item !== undefined).join("");
       }
     }
 
@@ -256,7 +307,7 @@ export namespace MdBuilder {
 
     /** Inline code. For multiline code-block use md.codeblock`...` */
     code(codeStr: string | TemplateStringsArray, ...values: string[]) {
-      return new Code<T, C>(this, ExtensibleMd._templateToArray(codeStr, values).join(""));
+      return new Code<T, C>(this, ExtensibleMd._templateToString(codeStr, values));
     }
 
     /** ==Highlight== */
@@ -283,7 +334,7 @@ export namespace MdBuilder {
      * We don't want to limit the possible emojis and injecting character by character could circumvent any format checks anyway.
      */
     emoji(nameOrEmoji: string | TemplateStringsArray, ...values: string[]) {
-      return new Emoji<T, C>(this, ExtensibleMd._templateToArray(nameOrEmoji, values).join(""));
+      return new Emoji<T, C>(this, ExtensibleMd._templateToString(nameOrEmoji, values));
     }
 
     /** Horizontal Rule */
@@ -324,7 +375,7 @@ export namespace MdBuilder {
      * Generated markdown: <urlStr>
      */
     url(urlStr: string | TemplateStringsArray, ...values: string[]) {
-      return new Url<T, C>(this, ExtensibleMd._templateToArray(urlStr, values).join(""));
+      return new Url<T, C>(this, ExtensibleMd._templateToString(urlStr, values));
     }
 
     /** Custom html or markdown to add without any escaping or processing. You can use it as a BlockElement or an InlineElement.
@@ -332,7 +383,7 @@ export namespace MdBuilder {
      * When used as a paragraph, you have to manally add a new line before and after the raw content (if needed).
      */
     raw(rawContent: string | T | TemplateStringsArray, ...values: (string | T)[]) {
-      return new RawElement<T, C>(this, ExtensibleMd._templateToArray(rawContent, values));
+      return new RawElement<T, C>(this, ExtensibleMd._templateToArray(rawContent, values, false));
     }
 
     /** Block quote: "> Some quoted text..." */
@@ -345,10 +396,10 @@ export namespace MdBuilder {
       content: (Value0 | BlockElement<C> | RawElement<T, C>) | TemplateStringsArray,
       ...values: (InlineContent<T, C> | BlockElement<C> | RawElement<T, C>)[]
     ) {
-      if (typeof content === "string" || content instanceof InlineElement || content instanceof RawElement || content instanceof BlockElement) {
-        return new Blockquote<T, C>(this, [content, ...values]);
-      } else {
+      if (isTemplateStringArray(content)) {
         return new Blockquote<T, C>(this, ExtensibleMd._templateToArray(content, values));
+      } else {
+        return new Blockquote<T, C>(this, [content, ...values]);
       }
     }
 
@@ -357,9 +408,15 @@ export namespace MdBuilder {
     codeblock(content: TemplateStringsArray, ...values: string[]): Codeblock<T, C>;
     codeblock(content: string | TemplateStringsArray, ...languageOrValues: (string | undefined)[]) {
       if (typeof content === "string") {
-        return new Codeblock<T, C>(this, content, languageOrValues[0] ?? undefined);
+        return new Codeblock<T, C>(this, [content], languageOrValues[0] ?? undefined);
       } else {
-        return new Codeblock<T, C>(this, ExtensibleMd._templateToArray(content, languageOrValues).join(""));
+        return new Codeblock<T, C>(
+          this,
+          ExtensibleMd._templateToArray(
+            content,
+            languageOrValues.filter((piece) => piece !== undefined)
+          )
+        );
       }
     }
 
@@ -527,19 +584,19 @@ export namespace MdBuilder {
         for (const [linkData, entry] of _context._state._linkUrlCache) {
           if (entry.referenced && !entry.included) {
             errors.push({
-              message: "Link url missing: " + linkData._describe(_context),
+              message: "Link url missing: " + linkData.describe(_context),
               errorType: ErrorType.LINK_REFERENCE_MISSING,
               element: linkData,
             });
           } else if (entry.included && !entry.referenced && _context.checkReferences === "strict") {
             errors.push({
-              message: "Link url not used: " + linkData._describe(_context),
+              message: "Link url not used: " + linkData.describe(_context),
               errorType: ErrorType.LINK_REFERENCE_NOT_USED,
               element: linkData,
             });
           } else if (entry.included > 1 && _context.checkReferences === "strict") {
             errors.push({
-              message: "Link url duplicated: " + linkData._describe(_context),
+              message: "Link url duplicated: " + linkData.describe(_context),
               errorType: ErrorType.LINK_REFERENCE_DUPLICATE,
               element: linkData,
             });
@@ -611,7 +668,7 @@ export namespace MdBuilder {
     }
 
     concat(rawContent: string | TemplateStringsArray, ...values: (string | T)[]) {
-      this.rawContent.push(...ExtensibleMd._templateToArray(rawContent, values));
+      this.rawContent.push(...ExtensibleMd._templateToArray(rawContent, values, false));
       return this;
     }
 
@@ -638,7 +695,7 @@ export namespace MdBuilder {
   export class Task<T = never, C extends Context = Context> extends Element<C> {
     private readonly [typeduckSymbol] = Task;
 
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: InlineContent<T, C>[], public checked: boolean = false) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: InlineContentOrTemplateContainer<T, C>[], public checked: boolean = false) {
       super();
     }
 
@@ -709,7 +766,7 @@ export namespace MdBuilder {
 
     static _toString<T, C extends Context>(
       md: ExtensibleMd<T, C>,
-      content: InlineContent<T, C> | Task<T, C> | InlineContent<T, C>[],
+      content: InlineContentOrTemplateContainer<T, C> | Task<T, C> | InlineContentOrTemplateContainer<T, C>[],
       context: C,
       peekLength: number | undefined
     ): string {
@@ -750,6 +807,8 @@ export namespace MdBuilder {
         return RawElement._toString(content, context, peekLength);
       } else if (content instanceof Task) {
         return Task._toString(content, context, peekLength);
+      } else if (content instanceof TemplateStringContainer) {
+        return this._toString(md, content.getValues(context.trimFirstNls), context, peekLength);
       } else {
         return ExtensibleMd._toString(md, content, context, peekLength);
       }
@@ -763,7 +822,7 @@ export namespace MdBuilder {
     }
 
     concat(codeStr: string | TemplateStringsArray, ...values: string[]) {
-      this.code += ExtensibleMd._templateToArray(codeStr, values).join("");
+      this.code += ExtensibleMd._templateToString(codeStr, values);
       return this;
     }
 
@@ -828,7 +887,13 @@ export namespace MdBuilder {
       super();
     }
 
-    protected _toString(context: C, peekLength: number | undefined) {
+    describe(context: C) {
+      const descLength = 160;
+      const peekStr = this._toString({ ...context, ...defaultOptions, dedupReferences: false }, descLength + 1, true).trim();
+      return MdBuilder.trimLength(peekStr, descLength);
+    }
+
+    protected _toString(context: C, peekLength: number | undefined, isDescribe = false) {
       return (
         Element._peekPiece(peekLength, this.isImage ? "![" : "[", (remaining) => (peekLength = remaining)) +
         Element._peekPiece(
@@ -843,10 +908,10 @@ export namespace MdBuilder {
             if (this.hrefOrTarget instanceof LinkUrl) {
               return `[${this.hrefOrTarget.getRefNumber(context, { referenced: peekLength === undefined })}]`;
             } else if (this.hrefOrTarget instanceof Heading) {
-              if (!this.hrefOrTarget.headingId) {
-                throw new Error("MdBuilder - Heading has no id! Heading:" + this.hrefOrTarget.content);
+              if (!this.hrefOrTarget.headingId && !isDescribe) {
+                throw new Error("MdBuilder - Heading has no id! Heading:" + this.hrefOrTarget.describe(context) + " Link:" + this.describe(context));
               }
-              return `(#${this.hrefOrTarget.headingId.replace(/([()])/g, "\\$1")})`;
+              return `(#${(this.hrefOrTarget.headingId ?? "no-heading-id").replace(/([()])/g, "\\$1")})`;
             } else {
               return `(${InlineElement._escapeUrl(this.hrefOrTarget, context, "(")}${
                 this.title ? ` "${Element._escapeLinkTitle(this.title, context)}"` : ""
@@ -863,7 +928,7 @@ export namespace MdBuilder {
   export class Text<T = never, C extends Context = Context> extends InlineElement<C> {
     constructor(
       readonly md: ExtensibleMd<T, C>,
-      readonly content: InlineContent<T, C>[],
+      readonly content: InlineContentOrTemplateContainer<T, C>[],
       readonly emphasis?: keyof Pick<Context, "bold" | "italic" | "strikethrough" | "superscript" | "subscript" | "highlight">
     ) {
       super();
@@ -923,7 +988,8 @@ export namespace MdBuilder {
   }
 
   export class Blockquote<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (InlineContent<T, C> | BlockElement<C> | RawElement<T, C>)[]) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (InlineContentOrTemplateContainer<T | BlockElement<C>, C> | BlockElement<C>)[]) {
+      // BlockElement<C> inside TemplateContainer shouldn't really happen, but we can handle it...
       super();
     }
 
@@ -957,12 +1023,12 @@ export namespace MdBuilder {
   }
 
   export class Codeblock<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, public code: string, public language?: string) {
+    constructor(readonly md: ExtensibleMd<T, C>, public code: (string | TemplateStringContainer<string>)[], public language?: string) {
       super();
     }
 
     concat(codeStr: string | TemplateStringsArray, ...values: string[]) {
-      this.code += ExtensibleMd._templateToArray(codeStr, values).join("");
+      this.code.push(...ExtensibleMd._templateToArray(codeStr, values));
       return this;
     }
 
@@ -980,7 +1046,12 @@ export namespace MdBuilder {
           peekLength,
           () => {
             let fence = "fence" in mark ? mark.fence : null;
-            const code = this.code;
+            const code = this.code
+              .flatMap((piece) => {
+                if (typeof piece === "string") return [piece];
+                else return piece.getValues(context.trimFirstNls);
+              })
+              .join("");
             if (fence?.trim().length) {
               const trimmedFence = fence.trim();
               const fenceChars = Array.from(new Set(trimmedFence.split("")));
@@ -1034,7 +1105,8 @@ export namespace MdBuilder {
   }
 
   export class Footnote<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (InlineContent<T, C> | BlockElement<C>)[]) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: (InlineContentOrTemplateContainer<T | BlockElement<C>, C> | BlockElement<C>)[]) {
+      // BlockElement<C> inside TemplateContainer shouldn't really happen, but we can handle it...
       super();
     }
 
@@ -1120,7 +1192,7 @@ export namespace MdBuilder {
     constructor(
       readonly md: ExtensibleMd<T, C>,
       public level: number | undefined,
-      readonly content: InlineContent<T, C>[],
+      readonly content: InlineContentOrTemplateContainer<T, C>[],
       public headingId?: string
     ) {
       super();
@@ -1139,6 +1211,12 @@ export namespace MdBuilder {
     concat(content: InlineContent<T, C> | TemplateStringsArray, ...values: InlineContent<T, C>[]) {
       this.content.push(...ExtensibleMd._templateToArray(content, values));
       return this;
+    }
+
+    describe(context: C) {
+      const descLength = 160;
+      const peekStr = this._toString({ ...context, ...defaultOptions, dedupReferences: false }, descLength + 1).trim();
+      return MdBuilder.trimLength(peekStr, descLength);
     }
 
     protected _toString(context: C, peekLength: number | undefined) {
@@ -1206,7 +1284,7 @@ export namespace MdBuilder {
       return entry.refNumber;
     }
 
-    _describe(context: C) {
+    describe(context: C) {
       const descLength = 160;
       let peekStr = this._toString({ ...context, ...defaultOptions, dedupReferences: false }, descLength + 1);
       if (peekStr.length >= descLength) peekStr = peekStr.trim().substring(0, descLength - 1) + "…";
@@ -1299,7 +1377,7 @@ export namespace MdBuilder {
   }
 
   export class Paragraph<T = never, C extends Context = Context> extends BlockElement<C> {
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: InlineContent<T, C>[]) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: InlineContentOrTemplateContainer<T, C>[]) {
       super();
     }
 
@@ -1383,7 +1461,7 @@ export namespace MdBuilder {
 
   export class TableHeader<T = never, C extends Context = Context> extends Element<C> {
     private readonly [typeduckSymbol] = TableHeader;
-    constructor(readonly md: ExtensibleMd<T, C>, readonly content: InlineContent<T, C>[], public align?: TableHeaderAlign) {
+    constructor(readonly md: ExtensibleMd<T, C>, readonly content: InlineContentOrTemplateContainer<T, C>[], public align?: TableHeaderAlign) {
       super();
     }
 

@@ -123,7 +123,7 @@ function testRun() {
       "Localhost missing"
     );
     test("long element description", () => {
-      const mdStr = linkRefLong._describe(MdBuilder.getDefaultContext());
+      const mdStr = linkRefLong.describe(MdBuilder.getDefaultContext());
       const to = `[1]: <http://localhost/missing-missing-a-long-long-long-long-long-long-long-long-long-long-long-long-link-link-link-link-link-link-link-link-link-link> "Localh…`;
       showDiff(mdStr, to);
       expect(mdStr).toBe(to);
@@ -279,8 +279,11 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   });
 
   test("noEscape", () => {
-    const mdStr = mdb.p`!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~`.toString({
+    const mdStr = mdb.p`
+!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~
+`.toString({
       smartEscape: "noEscape",
+      trimFirstNls: true,
     });
     const to = `\n!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~\n`;
     showDiff(mdStr, to);
@@ -290,13 +293,15 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   toStringTest(
     mdb.section(
       mdb.h`Title`,
-      mdb.p`Plain text toString ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`} ${mdb.sup`superscript`} ${mdb.highlight`highlight`}`}`}`}`,
+      mdb.p`
+Plain text toString ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`} ${mdb.sup`superscript`} ${mdb.highlight`highlight`}`}`}`}
+`,
       mdb.list([mdb.t`item 1`, mdb.t`item 2`]),
       mdb.codeblock("void main() { return 0; }").setLanguage("C")
     ),
     "\n# Title\n\nPlain text toString bold italic strikethrough subscript superscript highlight\n\n- item 1\n- item 2\n\n    void main() { return 0; }\n",
     (exp, to) => exp.toBe(to),
-    MdBuilder.noFormattingNoEscapeOptions
+    { ...MdBuilder.noFormattingNoEscapeOptions, trimFirstNls: true }
   );
 
   toStringTest(
@@ -348,13 +353,38 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
     { codeblock: { indent: "    " } }
   );
   toStringTest(mdb.codeblock("{\n  ```` \n  goto 10;\n}"), "\n`````\n{\n  ```` \n  goto 10;\n}\n`````\n", (exp, to) => exp.toBe(to));
-  toStringTest(mdb.codeblock`{\n  ^v^v \n  goto 10;\n}`, "\n^v^v^v^v\n{\n  ^v^v \n  goto 10;\n}\n^v^v^v^v\n", (exp, to) => exp.toBe(to), {
-    codeblock: { fence: "^v^v" },
-  });
+  toStringTest(
+    mdb.codeblock`
+{
+  ^v^v 
+  goto 10;
+}
+`,
+    "\n^v^v^v^v\n{\n  ^v^v \n  goto 10;\n}\n^v^v^v^v\n",
+    (exp, to) => exp.toBe(to),
+    {
+      codeblock: { fence: "^v^v" },
+      trimFirstNls: true,
+    }
+  );
   toStringTest(mdb.code("{\n  ^v^v \n  goto 10;\n}"), "^v^v^v^v{\n ^v^v \n goto 10;\n}^v^v^v^v", (exp, to) => exp.toBe(to), { code: "^v^v" });
-  toStringTest(mdb.blockquote`I've never said ${mdb.t`that`}`.push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
+  toStringTest(
+    mdb.blockquote`
+I've never said ${mdb.t`that`}`.push(mdb.p`Dude
+  	  	  	 	    `), // <= spaces+tabs
+    "\n> I've never said that\n> \n> Dude\n",
+    (exp, to) => exp.toBe(to),
+    { trimFirstNls: true }
+  );
   toStringTest(mdb.blockquote(mdb.t`I've never said that`).push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
-  toStringTest(mdb.blockquote(mdb.p`I've never said that`).push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
+  toStringTest(
+    mdb.blockquote(mdb.p`I've never said that
+                        `).push(mdb.p`
+Dude`),
+    "\n> I've never said that\n> \n> Dude\n",
+    (exp, to) => exp.toBe(to),
+    { trimFirstNls: true }
+  );
   toStringTest(mdb.blockquote(mdb.p`I've never said that`).push(mdb.p`Dude`), "\n> I've never said that\n> \n> Dude\n", (exp, to) => exp.toBe(to));
   toStringTest(
     mdb.p`Text ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`subscript`} ${mdb.sup`superscript`} ${mdb.highlight`highlight`}`}`}`}`,
