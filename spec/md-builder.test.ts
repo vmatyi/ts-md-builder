@@ -441,13 +441,13 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
         [mdb.t`header 1`, mdb.th(`header 2`).setAlign(MdBuilder.CENTER), mdb.th`header |3|`.setAlign(MdBuilder.RIGHT)],
         [mdb.t`cell 1`, mdb.t`cell 2`, mdb.t`cell |3|`]
       )
-      .push(mdb.tr(`cell 4`, mdb.t`cell 5`).push(mdb.t`cell |6|`));
+      .push(mdb.tr(`cell 4`, mdb.t`cell\n5`).push(mdb.t`cell |6|`));
     toStringTest(
       table,
       "\n| header 1 | header 2 | header \\|3\\| |\n" +
         "| -------- | :------: | -----------: |\n" +
         "| cell 1   |  cell 2  |   cell \\|3\\| |\n" +
-        "| cell 4   |  cell 5  |   cell \\|6\\| |\n",
+        "| cell 4   | cell<br>5 |   cell \\|6\\| |\n",
       (exp, to) => exp.toBe(to)
     );
   }

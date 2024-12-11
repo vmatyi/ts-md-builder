@@ -25,6 +25,8 @@ export namespace MdBuilder {
     codeblock: { indent: string } | { fence: string; indent?: string };
     /** Newline within paragraph "  \n" | "<br>\n" | "\\\n" */
     nl: string;
+    /** Newline outside a paragraphs "<br>" | <br/> | " " (e.g. in a table cell, where \n escaping is not supported by markdown). Default is <br> " " (space) */
+    inlineNl: string;
     /** Marker after the number for ordered lists "." | ")" Stick to "." if possible. */
     orderedList: string;
     /** Bullet marker for unordered lists "-" | "+" | "*" | ("-" | "+" | "*")[] Specify an Array to use different markers for sub-lists */
@@ -107,6 +109,7 @@ export namespace MdBuilder {
     code: "`",
     codeblock: { fence: "```" },
     nl: "  \n",
+    inlineNl: "<br>",
     orderedList: ".",
     unorderedList: "-",
     smartEscape: true,
@@ -127,6 +130,7 @@ export namespace MdBuilder {
     italic: "",
     blockquote: "> ",
     nl: "\n",
+    inlineNl: " ",
     orderedList: ". ",
     strikethrough: "",
     subscript: "",
@@ -699,6 +703,10 @@ export namespace MdBuilder {
       );
     }
 
+    static _inlineContext<C extends Context>(context: C) {
+      return { ...context, nl: context.inlineNl };
+    }
+
     static _toString<T, C extends Context>(
       md: ExtensibleMd<T, C>,
       content: InlineContent<T, C> | Task<T, C> | InlineContent<T, C>[],
@@ -1139,7 +1147,7 @@ export namespace MdBuilder {
         Element._peekPiece(peekLength, "\n" + "#".repeat(headingLevel) + " ", (remaining) => (peekLength = remaining)) +
         Element._peekPiece(
           peekLength,
-          () => InlineElement._toString(this.md, this.content, { ...context, headingLevel: headingLevel + 1, nl: " " }, peekLength),
+          () => InlineElement._toString(this.md, this.content, InlineElement._inlineContext(context), peekLength),
           (remaining) => (peekLength = remaining)
         ) +
         Element._peekPiece(
@@ -1470,8 +1478,9 @@ export namespace MdBuilder {
       return this;
     }
 
-    protected _toString(context: C, peekLength: number | undefined) {
+    protected _toString(_context: C, peekLength: number | undefined) {
       const widths: number[] = [];
+      const context = InlineElement._inlineContext(_context);
       return (
         Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining)) +
         this.header
