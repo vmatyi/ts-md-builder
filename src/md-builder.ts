@@ -337,13 +337,13 @@ export namespace MdBuilder {
 
     /** Block quote: "> Some quoted text..." */
     blockquote(
-      content0: Value0 | BlockElement | RawElement<T, C>,
-      ...content: (InlineContent<T, C> | BlockElement | RawElement<T, C>)[]
+      content0: Value0 | BlockElement<C> | RawElement<T, C>,
+      ...content: (InlineContent<T, C> | BlockElement<C> | RawElement<T, C>)[]
     ): Blockquote<T, C>;
     blockquote(content: TemplateStringsArray, ...values: InlineContent<T, C>[]): Blockquote<T, C>;
     blockquote(
-      content: (Value0 | BlockElement | RawElement<T, C>) | TemplateStringsArray,
-      ...values: (InlineContent<T, C> | BlockElement | RawElement<T, C>)[]
+      content: (Value0 | BlockElement<C> | RawElement<T, C>) | TemplateStringsArray,
+      ...values: (InlineContent<T, C> | BlockElement<C> | RawElement<T, C>)[]
     ) {
       if (typeof content === "string" || content instanceof InlineElement || content instanceof RawElement || content instanceof BlockElement) {
         return new Blockquote<T, C>(this, [content, ...values]);
@@ -476,7 +476,7 @@ export namespace MdBuilder {
         escaped = context.smartEscape
           ? context.escapeEmojisInText === "allSpecChars"
             ? escaped.replace(/(:[^a-zA-Z0-9]|(?<![0-9A-Za-z]):[DOPosz](?![0-9A-Za-z]))/g, "\\$1")
-            : escaped.replace(/(:[0-9a-z_]+(?=:)|(?<![0-9A-Za-z]):[$()*/@DOPosz|](?![0-9A-Za-z]))/g, "\\$1")
+            : escaped.replace(/(:[0-9a-z_]+(?=:)|(?<![0-9A-Za-z]):[$()*/@DOPosz|](?![0-9A-Za-z]))/g, "\\$1") // :smiley: | :) :D
           : escaped.replace(/(:)/g, "\\$1");
       }
       return escaped.replace(/\n/g, context.nl).replace(/(^|\n)  (?=\n)/g, "$1\\"); // empty lines doesn't do very well with double-space NL escaping

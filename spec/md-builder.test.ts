@@ -233,16 +233,21 @@ footnote ref: [^1] ref again: [^1] missing: [^2] duplicate: [^3]
   }
 
   toStringTest(mdb.h`Title`.concat(mdb.t` `.concat`${mdb.b`1`}`), `\n# Title **1**\n`, (exp, to) => exp.toBe(to));
+
   toStringTest(mdb.url("http:\\\\localhost\\alma?chars=<[\\]>"), `<http:\\\\localhost\\alma?chars=%3C[\\]%3E>`, (exp, to) => exp.toBe(to));
   toStringTest(mdb.url("http:\\\\localhost\\alma?chars=<[\\]>"), `<http:\\\\localhost\\alma?chars=%3C%5B\\%5D%3E>`, (exp, to) => exp.toBe(to), {
     smartUrlEscape: false,
   });
+
   toStringTest(mdb.t`${mdb.raw("* <html>").concat`[]`.concat("</html>")}`, `\\* <html>[]</html>`, (exp, to) => exp.toBe(to));
   toStringTest(
     mdb.blockquote(mdb.raw("* <html>").concat`[]`, "some Array[]", mdb.raw`</html>`),
     `\n> * <html>[]\n> \n> some Array\\[\\]\n> \n> </html>\n`,
     (exp, to) => exp.toBe(to)
   );
+
+  toStringTest(mdb.blockquote(mdb.codeblock(`{\n}`)), "\n> ```\n> {\n> }\n> ```\n", (exp, to) => exp.toBe(to));
+
   toStringTest(mdb.link("Link text", "http:\\\\localhost", "Link title"), `[Link text](http:\\\\localhost "Link title")`, (exp, to) => exp.toBe(to));
   toStringTest(
     mdb.p`${mdb.link("Reference-style link", mdb.linkUrl("http://localhost", "Localhost"))}`,
