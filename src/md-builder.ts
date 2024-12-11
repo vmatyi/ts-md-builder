@@ -21,8 +21,11 @@ export namespace MdBuilder {
     footnoteIndent: string;
     /** Inline code marker "`" */
     code: string;
-    /** Code Block marker { indent: "    " } | { fence: "```" } | { fence: "~~~" } */
-    codeblock: { indent: string } | { fence: string; indent?: string };
+    /** Code Block marker { indent: "    " } | { fence: "```" } | { fence: "~~~" } | { fence: string, indent?: string, defaultLanguage?: string }
+     * - { fence: "~~~", indent: " " } fence the block, and also indent it (together with the fence)
+     * - { ..., defaultLanguage } to set the language of codeblock-s without language specification (md.codeblock(...).setLanguage("") will still force them to be empty)
+     */
+    codeblock: { indent: string; defaultLanguage?: undefined } | { fence: string; indent?: string; defaultLanguage?: string };
     /** Newline within paragraph "  \n" | "<br>\n" | "\\\n" */
     nl: string;
     /** Newline outside a paragraphs "<br>" | <br/> | " " (e.g. in a table cell, where \n escaping is not supported by markdown). Default is <br> " " (space) */
@@ -1071,7 +1074,7 @@ export namespace MdBuilder {
               }
             }
 
-            const codeWithFence = fence ? fence + (fence && this.language ? this.language : "") + "\n" + code + "\n" + fence : code;
+            const codeWithFence = fence ? fence + (this.language ?? mark.defaultLanguage ?? "") + "\n" + code + "\n" + fence : code;
             return codeWithFence.replace(/\n/g, "\n" + indent);
           },
           (remaining) => (peekLength = remaining)

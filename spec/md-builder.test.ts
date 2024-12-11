@@ -352,7 +352,9 @@ Plain text toString ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`
     (exp, to) => exp.toBe(to),
     { codeblock: { indent: "    " } }
   );
-  toStringTest(mdb.codeblock("{\n  ```` \n  goto 10;\n}"), "\n`````\n{\n  ```` \n  goto 10;\n}\n`````\n", (exp, to) => exp.toBe(to));
+  toStringTest(mdb.codeblock("{\n  ```` \n  goto 10;\n}").setLanguage(""), "\n`````\n{\n  ```` \n  goto 10;\n}\n`````\n", (exp, to) => exp.toBe(to), {
+    codeblock: { fence: "````", defaultLanguage: "defLang" },
+  });
   toStringTest(
     mdb.codeblock`
 {
@@ -360,10 +362,10 @@ Plain text toString ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`
   goto 10;
 }
 `,
-    "\n^v^v^v^v\n{\n  ^v^v \n  goto 10;\n}\n^v^v^v^v\n",
+    "\n^v^v^v^vdefLang\n{\n  ^v^v \n  goto 10;\n}\n^v^v^v^v\n",
     (exp, to) => exp.toBe(to),
     {
-      codeblock: { fence: "^v^v" },
+      codeblock: { fence: "^v^v", defaultLanguage: "defLang" },
       trimFirstNls: true,
     }
   );
