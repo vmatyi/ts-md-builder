@@ -1452,7 +1452,12 @@ export namespace MdBuilder {
                   if (!str.endsWith("\n")) str += "\n";
                 }
                 return str;
-              } else return BlockElement._toString(item, { ...context, headingLevel: (this.heading?.level ?? context.headingLevel) + 1 }, peekLength);
+              } else
+                return BlockElement._toString(
+                  item,
+                  { ...context, headingLevel: this.heading ? (this.heading.level ?? context.headingLevel) + 1 : context.headingLevel },
+                  peekLength
+                );
             },
             (remaining) => (peekLength = remaining)
           )

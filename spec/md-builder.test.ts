@@ -305,6 +305,16 @@ Plain text toString ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`
   );
 
   toStringTest(
+    mdb.section(
+      mdb.h`H1`,
+      mdb.section(null, mdb.section(mdb.h`H2`, mdb.section(mdb.h`H3`, mdb.section(mdb.h5`H5`, mdb.section(mdb.h`H6`)), mdb.section(mdb.h`H4`))))
+    ),
+    "\n# H1\n\n## H2\n\n### H3\n\n##### H5\n\n###### H6\n\n#### H4\n",
+    (exp, to) => exp.toBe(to),
+    { ...MdBuilder.noFormattingNoEscapeOptions, trimFirstNls: true }
+  );
+
+  toStringTest(
     mdb.p`Reference`.concat(mdb.footnote("Footnote of reference").setId("refId").ref),
     `\nReference[^refId]\n\n[^refId]: Footnote of reference\n`,
     (exp, to) => exp.toBe(to)
