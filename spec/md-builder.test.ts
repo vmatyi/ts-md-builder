@@ -409,7 +409,7 @@ Dude`),
     (exp, to) => exp.toBe(to),
     { smartEscape: false, bold: "<b>", italic: "<i>", strikethrough: "<s>", subscript: "<sub>", superscript: "<sup>" }
   );
-  toStringTest(mdb.p`Simple ${mdb.code("code")}.`, "\nSimple `code`.\n", (exp, to) => exp.toBe(to));
+  toStringTest(mdb.p`Simple ${mdb.code`c${"od"}e`}.`, "\nSimple `code`.\n", (exp, to) => exp.toBe(to));
   toStringTest(
     mdb.p`Text ${mdb.code(" this is a code with ````-s").concat(" ending with a `")}`,
     "\nText ````` this is a code with ````-s ending with a ` `````\n",
