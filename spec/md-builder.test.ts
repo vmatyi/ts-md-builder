@@ -379,7 +379,7 @@ Plain text toString ${mdb.b`bold ${mdb.i`italic ${mdb.s`strikethrough ${mdb.sub`
       trimFirstNls: true,
     }
   );
-  toStringTest(mdb.code("{\n  ^v^v \n  goto 10;\n}"), "^v^v^v^v{\n ^v^v \n goto 10;\n}^v^v^v^v", (exp, to) => exp.toBe(to), { code: "^v^v" });
+  toStringTest(mdb.code("{\n  ^v^v \n  goto 10;\n}"), "^v^v^v^v{ ^v^v goto 10; }^v^v^v^v", (exp, to) => exp.toBe(to), { code: "^v^v" });
   toStringTest(
     mdb.blockquote`
 I've never said ${mdb.t`that`}`.push(mdb.p`Dude

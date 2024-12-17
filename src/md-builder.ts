@@ -849,7 +849,7 @@ export namespace MdBuilder {
           code = code + " ";
         }
       }
-      return mark + code + mark;
+      return mark + code.replace(/[ \t]*\n[ \t\n]*/g, " ") + mark;
     }
   }
 
