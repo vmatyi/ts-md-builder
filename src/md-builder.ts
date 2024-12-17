@@ -525,7 +525,7 @@ export namespace MdBuilder {
   };
 
   export abstract class Element<C extends Context = Context> {
-    protected static _escapeText(text: string, context: Pick<Context, "smartEscape" | "nl" | "escapeEmojisInText">) {
+    static _escapeText(text: string, context: Pick<Context, "smartEscape" | "nl" | "escapeEmojisInText">) {
       let escaped =
         context.smartEscape === "noEscape"
           ? text

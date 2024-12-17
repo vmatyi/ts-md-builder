@@ -9,7 +9,9 @@ class MyMd extends MdBuilder.ExtensibleMd<MyTypes, MyContext> {
       return context.fixedDigits === undefined ? value.toString() : value.toFixed(context.fixedDigits);
     } else {
       const date = new Date(value);
-      return date.toLocaleString(context.locales, { timeZone: context.timeZone });
+      const str = date.toLocaleString(context.locales, { timeZone: context.timeZone });
+      // Escape the result text: either the whole string (like here) or just the text parts (e.g. if you are returning markdown-formatted text)
+      return MdBuilder.InlineElement._escapeText(str, context);
     }
   }
 }
