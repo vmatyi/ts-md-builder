@@ -355,10 +355,10 @@ export namespace MdBuilder {
     /** Use href: string (e.g. "http://url") for normal links, href: "#headingId"|Heading (previously created with md.h`...`) for intra-page link or href: LinkUrl (md.linkUrl(...)) for reference-style links
      * Generated markdown: [text](href "title") or [text](#headerId "title") or [text][LinkUrl.refNr] style links
      */
-    link(text: InlineContent<T, C>, href: string, title: string): Link<T, C>;
+    link(text: InlineContent<T, C>, href: string, title: string | T): Link<T, C>;
     link(text: InlineContent<T, C>, target: LinkUrl | Heading<T, C>): Link<T, C>;
-    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading<T, C>, title?: string): Link<T, C>;
-    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading<T, C>, title?: string) {
+    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading<T, C>, title?: string | T): Link<T, C>;
+    link(text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading<T, C>, title?: string | T) {
       return new Link<T, C>(this, text, hrefOrTarget, title);
     }
 
@@ -658,7 +658,7 @@ export namespace MdBuilder {
   }
 
   /** InlineElement and BlockElement has no properties, thus duck typing would consider them interchangeable, allowing calls like md.section(md.h`Title`, md.t`This should be a block, not text!`) */
-  export const typeduckSymbol = Symbol("typeduc");
+  export const typeduckSymbol = Symbol("typeduck");
 
   // ======================= Raw element ===========================
 
@@ -877,14 +877,20 @@ export namespace MdBuilder {
 
   /** A link, like [text](href "title") */
   export class Link<T = never, C extends Context = Context> extends InlineElement<C> {
-    constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, href: string, title?: string, isImage?: boolean);
+    constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, href: string, title?: string | T, isImage?: boolean);
     constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, reference: LinkUrl, unused?: undefined, isImage?: boolean);
-    constructor(md: ExtensibleMd<T, C>, text: InlineContent<T, C>, hrefOrTarget: string | LinkUrl | Heading<T, C>, title?: string, isImage?: boolean);
+    constructor(
+      md: ExtensibleMd<T, C>,
+      text: InlineContent<T, C>,
+      hrefOrTarget: string | LinkUrl | Heading<T, C>,
+      title?: string | T,
+      isImage?: boolean
+    );
     constructor(
       readonly md: ExtensibleMd<T, C>,
       readonly text: InlineContent<T, C>,
       readonly hrefOrTarget: string | LinkUrl | Heading,
-      readonly title?: string,
+      readonly title?: string | T,
       readonly isImage?: boolean
     ) {
       super();
@@ -916,9 +922,12 @@ export namespace MdBuilder {
               }
               return `(#${(this.hrefOrTarget.headingId ?? "no-heading-id").replace(/([()])/g, "\\$1")})`;
             } else {
-              return `(${InlineElement._escapeUrl(this.hrefOrTarget, context, "(")}${
-                this.title ? ` "${Element._escapeLinkTitle(this.title, context)}"` : ""
-              })`;
+              const title = this.title
+                ? typeof this.title === "string"
+                  ? this.title
+                  : ExtensibleMd._toString(this.md, this.title, context, peekLength)
+                : undefined;
+              return `(${InlineElement._escapeUrl(this.hrefOrTarget, context, "(")}${title ? ` "${Element._escapeLinkTitle(title, context)}"` : ""})`;
             }
           },
           (remaining) => (peekLength = remaining)

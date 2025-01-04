@@ -92,6 +92,8 @@ function testRun() {
     toStringTest(mdb.t`<http://not.an.url/>`, "\\<http://not.an.url/\\>", (exp, to) => exp.toBe(to));
     toStringTest(mdb.t`<not@an.email>`, "\\<not@an.email\\>", (exp, to) => exp.toBe(to));
 
+    toStringTest(mdb.t`${mdb.link(123, "http:\\localhost", 123)}`, `[123](http:\\localhost "123")`, (exp, to) => exp.toBe(to));
+
     toStringTest(
       mdb.t`!${mdb.link("Link, but not an image", "http:\\localhost", "Link to localhost")}`,
       `\\![Link, but not an image](http:\\localhost "Link to localhost")`,
