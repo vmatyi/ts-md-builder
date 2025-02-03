@@ -110,6 +110,11 @@ function testRun() {
       (exp, to) => exp.toBe(to)
     );
     toStringTest(
+      mdb.t`${mdb.link(mdb.t`Link with a nested ${mdb.link(mdb.t`link`, "http:\\never", "Never")}`, "http:\\localhost", "Link to localhost")}`,
+      `[Link with a nested link](http:\\localhost "Link to localhost")`,
+      (exp, to) => exp.toBe(to)
+    );
+    toStringTest(
       mdb.t`
 | Not      | A |  Table |
 | -------- | - | -----: |

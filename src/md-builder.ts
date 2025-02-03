@@ -78,6 +78,8 @@ export namespace MdBuilder {
     headingLevel: number;
     /** Root list level (1) */
     listLevel: number;
+    /** disable generating links (substitute the link text only). Also used internally to disabled nested links (which would be confusing and unsupported in markdown) */
+    noLinks?: boolean;
 
     _state: {
       /** Reference number to start numbering [Markdown link][1] referenced link from */
@@ -903,36 +905,48 @@ export namespace MdBuilder {
     }
 
     protected _toString(context: C, peekLength: number | undefined, isDescribe = false) {
-      return (
-        Element._peekPiece(peekLength, this.isImage ? "![" : "[", (remaining) => (peekLength = remaining)) +
-        Element._peekPiece(
+      if (context.noLinks) {
+        return Element._peekPiece(
           peekLength,
           () => InlineElement._toString(this.md, this.text, context, peekLength),
           (remaining) => (peekLength = remaining)
-        ) +
-        Element._peekPiece(peekLength, "]", (remaining) => (peekLength = remaining)) +
-        Element._peekPiece(
-          peekLength,
-          () => {
-            if (this.hrefOrTarget instanceof LinkUrl) {
-              return `[${this.hrefOrTarget.getRefNumber(context, { referenced: peekLength === undefined })}]`;
-            } else if (this.hrefOrTarget instanceof Heading) {
-              if (!this.hrefOrTarget.headingId && !isDescribe) {
-                throw new Error("MdBuilder - Heading has no id! Heading:" + this.hrefOrTarget.describe(context) + " Link:" + this.describe(context));
+        );
+      } else {
+        return (
+          Element._peekPiece(peekLength, this.isImage ? "![" : "[", (remaining) => (peekLength = remaining)) +
+          Element._peekPiece(
+            peekLength,
+            () => InlineElement._toString(this.md, this.text, { ...context, noLinks: true }, peekLength),
+            (remaining) => (peekLength = remaining)
+          ) +
+          Element._peekPiece(peekLength, "]", (remaining) => (peekLength = remaining)) +
+          Element._peekPiece(
+            peekLength,
+            () => {
+              if (this.hrefOrTarget instanceof LinkUrl) {
+                return `[${this.hrefOrTarget.getRefNumber(context, { referenced: peekLength === undefined })}]`;
+              } else if (this.hrefOrTarget instanceof Heading) {
+                if (!this.hrefOrTarget.headingId && !isDescribe) {
+                  throw new Error(
+                    "MdBuilder - Heading has no id! Heading:" + this.hrefOrTarget.describe(context) + " Link:" + this.describe(context)
+                  );
+                }
+                return `(#${(this.hrefOrTarget.headingId ?? "no-heading-id").replace(/([()])/g, "\\$1")})`;
+              } else {
+                const title = this.title
+                  ? typeof this.title === "string"
+                    ? this.title
+                    : ExtensibleMd._toString(this.md, this.title, context, peekLength)
+                  : undefined;
+                return `(${InlineElement._escapeUrl(this.hrefOrTarget, context, "(")}${
+                  title ? ` "${Element._escapeLinkTitle(title, context)}"` : ""
+                })`;
               }
-              return `(#${(this.hrefOrTarget.headingId ?? "no-heading-id").replace(/([()])/g, "\\$1")})`;
-            } else {
-              const title = this.title
-                ? typeof this.title === "string"
-                  ? this.title
-                  : ExtensibleMd._toString(this.md, this.title, context, peekLength)
-                : undefined;
-              return `(${InlineElement._escapeUrl(this.hrefOrTarget, context, "(")}${title ? ` "${Element._escapeLinkTitle(title, context)}"` : ""})`;
-            }
-          },
-          (remaining) => (peekLength = remaining)
-        )
-      );
+            },
+            (remaining) => (peekLength = remaining)
+          )
+        );
+      }
     }
   }
 
