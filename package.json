@@ -1,6 +1,6 @@
 {
   "name": "ts-md-builder",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "description": "A template for creating npm packages using TypeScript and VSCode",
   "repository": {
     "type": "git",
