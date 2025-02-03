@@ -554,6 +554,24 @@ export namespace MdBuilder {
         : urlStr.replace(/([*_`|[\]{}<>~#+\-.!])/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
     }
 
+    static _debugToString<T, C extends Context>(
+      tagName: string | null,
+      content: (InlineContentOrTemplateContainer<T, C> | Element<C>)[],
+      isBlock: boolean
+    ): string {
+      const openTag = tagName ? `<${tagName}>` : "";
+      const closeTag = tagName ? `</${tagName.replace(/ .*/, "")}>` : "";
+      const str = content
+        .map((piece, index) => {
+          if (piece instanceof Element && index > 0) return piece._debugToString.replace(/^\n/, "");
+          else if (piece instanceof Element) return piece._debugToString;
+          else if (piece instanceof TemplateStringContainer) return this._debugToString(null, piece.getValues(true), false);
+          else return piece;
+        })
+        .join("");
+      return isBlock ? `\n${openTag}${str.replace(/\n(?!$)/g, "\n  ")}${closeTag}\n` : `${openTag}${str}${closeTag}`;
+    }
+
     toString: Context extends C
       ? <E = never>(context?: ToStringContext<C>, onErrors?: ErrorHandler<E>) => string | E
       : <E = never>(context: ToStringContext<C>, onErrors?: ErrorHandler<E>) => string | E = <E = never>(
@@ -657,6 +675,9 @@ export namespace MdBuilder {
       return str;
     }
     protected abstract _toString(context: C, peekLength: number | undefined): string;
+
+    /** just to have a quick peek at the structure in a debugger */
+    abstract get _debugToString(): string;
   }
 
   /** InlineElement and BlockElement has no properties, thus duck typing would consider them interchangeable, allowing calls like md.section(md.h`Title`, md.t`This should be a block, not text!`) */
@@ -691,6 +712,14 @@ export namespace MdBuilder {
 
     static _toString<T, C extends Context>(item: RawElement<T, C>, context: C, peekLength: number | undefined): string {
       return item._toString(context, peekLength);
+    }
+
+    get _debugToString() {
+      return Element._debugToString(
+        "raw",
+        [this.rawContent.map((item) => Element._debugToString("rawContent", ["" + item], false)).join("\n")],
+        false
+      );
     }
   }
 
@@ -727,6 +756,10 @@ export namespace MdBuilder {
 
     static _toString<T, C extends Context>(item: Task<T, C>, context: C, peekLength: number | undefined): string {
       return item._toString(context, peekLength);
+    }
+
+    get _debugToString() {
+      return Element._debugToString("task", this.content, false);
     }
   }
 
@@ -853,6 +886,10 @@ export namespace MdBuilder {
       }
       return mark + code.replace(/[ \t]*\n[ \t\n]*/g, " ") + mark;
     }
+
+    get _debugToString() {
+      return Element._debugToString("code", [this.code], false);
+    }
   }
 
   /** An emoji, e.g. :smile: */
@@ -865,6 +902,10 @@ export namespace MdBuilder {
       const nameOrEmoji = this.nameOrEmoji;
       return /^[a-z_]+$/.test(nameOrEmoji) ? `:${nameOrEmoji}:` : nameOrEmoji;
     }
+
+    get _debugToString() {
+      return Element._debugToString("emoji", [this.nameOrEmoji], false);
+    }
   }
 
   /** A footnote reference, e.g. [^1] */
@@ -872,8 +913,13 @@ export namespace MdBuilder {
     constructor(readonly footnote: Footnote<T, C>) {
       super();
     }
+
     protected _toString(context: C, peekLength: number | undefined): string {
       return `[^${this.footnote.getRefId(context, { referenced: peekLength === undefined })}]`;
+    }
+
+    get _debugToString() {
+      return Element._debugToString("footnoteReference", ["...refId..."], false);
     }
   }
 
@@ -948,6 +994,16 @@ export namespace MdBuilder {
         );
       }
     }
+
+    get _debugToString() {
+      let hrefOrTarget = Element._debugToString(null, [this.hrefOrTarget], false).replace(/\n/g, "");
+      if (hrefOrTarget.length > 40) hrefOrTarget = hrefOrTarget.substring(0, 32) + "...";
+      return Element._debugToString(
+        `link ${typeof this.hrefOrTarget === "string" ? "href" : "target"}="${hrefOrTarget}" title="${this.title}"`,
+        [this.text],
+        false
+      );
+    }
   }
 
   /** A formatted text fragment, like normal text, bold, italic, etc. */
@@ -970,6 +1026,10 @@ export namespace MdBuilder {
         ? InlineElement._bracketMark(this.md, this.content, context, context[this.emphasis], peekLength)
         : InlineElement._toString(this.md, this.content, context, peekLength);
     }
+
+    get _debugToString() {
+      return Element._debugToString(this.emphasis ?? "text", this.content, false);
+    }
   }
 
   /** A simple url or e-mail address, e.g. <noreply@spam.com> */
@@ -980,6 +1040,10 @@ export namespace MdBuilder {
 
     protected _toString(context: C, peekLength: number | undefined) {
       return `<${InlineElement._escapeUrl(this.urlStr, context, "<")}>`;
+    }
+
+    get _debugToString() {
+      return Element._debugToString("url", [this.urlStr], false);
     }
   }
 
@@ -1046,6 +1110,9 @@ export namespace MdBuilder {
         )
         .join("");
     }
+    get _debugToString() {
+      return Element._debugToString("blockQuote", this.content, true);
+    }
   }
 
   export class Codeblock<T = never, C extends Context = Context> extends BlockElement<C> {
@@ -1105,6 +1172,10 @@ export namespace MdBuilder {
         Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
       );
     }
+
+    get _debugToString() {
+      return Element._debugToString("codeblock", this.code, true);
+    }
   }
 
   export class Definition<T = never, C extends Context = Context> extends BlockElement<C> {
@@ -1127,6 +1198,10 @@ export namespace MdBuilder {
         ) +
         Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
       );
+    }
+
+    get _debugToString() {
+      return Element._debugToString(`definition key="${this.term}"`, [this.definition], true);
     }
   }
 
@@ -1212,6 +1287,10 @@ export namespace MdBuilder {
         })
         .join("");
     }
+
+    get _debugToString() {
+      return Element._debugToString("footnote", this.content, true);
+    }
   }
 
   export class Heading<T = never, C extends Context = Context> extends BlockElement<C> {
@@ -1262,6 +1341,10 @@ export namespace MdBuilder {
         Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
       );
     }
+
+    get _debugToString() {
+      return Element._debugToString("heading", this.content, true);
+    }
   }
 
   export class Hr<T = never, C extends Context = Context> extends BlockElement<C> {
@@ -1286,6 +1369,9 @@ export namespace MdBuilder {
         ) +
         Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
       );
+    }
+    get _debugToString() {
+      return Element._debugToString("hr", [], true);
     }
   }
 
@@ -1336,6 +1422,10 @@ export namespace MdBuilder {
         ) +
         Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
       );
+    }
+
+    get _debugToString() {
+      return Element._debugToString(`linkUrl href="${this.href}"`, [this.title], false);
     }
   }
 
@@ -1400,6 +1490,16 @@ export namespace MdBuilder {
         })
         .join("");
     }
+
+    get _debugToString() {
+      return Element._debugToString(
+        "list",
+        this.items.map((item) =>
+          Element._debugToString(item instanceof InlineElement ? "item" : item instanceof Task ? "item" : "non-item", [item], true)
+        ),
+        true
+      );
+    }
   }
 
   export class Paragraph<T = never, C extends Context = Context> extends BlockElement<C> {
@@ -1440,6 +1540,10 @@ export namespace MdBuilder {
         ) +
         Element._peekPiece(peekLength, "\n", (remaining) => (peekLength = remaining))
       );
+    }
+
+    get _debugToString() {
+      return Element._debugToString("paragraph", this.content, true);
     }
   }
 
@@ -1488,6 +1592,10 @@ export namespace MdBuilder {
         .join("");
       return headingStr + contentStr;
     }
+
+    get _debugToString() {
+      return Element._debugToString("section", [this.heading?._debugToString ?? "\n<no-heading />\n", ...this.content], true);
+    }
   }
 
   export class TableHeader<T = never, C extends Context = Context> extends Element<C> {
@@ -1513,8 +1621,13 @@ export namespace MdBuilder {
         (remaining) => (peekLength = remaining)
       );
     }
+
     static _toString<T, C extends Context>(header: TableHeader<T, C>, context: C, peekLength: number | undefined) {
       return header._toString(context, peekLength);
+    }
+
+    get _debugToString() {
+      return Element._debugToString("th", this.content, false);
     }
   }
 
@@ -1558,6 +1671,7 @@ export namespace MdBuilder {
         })
         .join("");
     }
+
     static _toString<T, C extends Context>(
       row: TableRow<T, C>,
       context: C,
@@ -1566,6 +1680,14 @@ export namespace MdBuilder {
       widths: number[]
     ) {
       return row._toString(context, peekLength, header, widths);
+    }
+
+    get _debugToString() {
+      return Element._debugToString(
+        "tableRow",
+        this.cells.map((cell) => Element._debugToString("td", [cell], false)),
+        true
+      );
     }
   }
 
@@ -1636,6 +1758,10 @@ export namespace MdBuilder {
           )
           .join("")
       );
+    }
+
+    get _debugToString() {
+      return Element._debugToString("table", ["\n", Element._debugToString("header", this.header, false), "\n", ...this.rows], true);
     }
   }
 

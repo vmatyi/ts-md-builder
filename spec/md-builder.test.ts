@@ -43,6 +43,15 @@ function toStringTest<C extends MdBuilder.Context>(
   );
 }
 
+function debugToStringTest<C extends MdBuilder.Context>(from: MdBuilder.Element<C>, to: string) {
+  test("toStringTest: " + MdBuilder.trimLength(to.trim(), 100).replace(/\t/g, "⇥").replace(/\n/g, "↵"), () => {
+    const mdStr = from._debugToString;
+    showDiff(mdStr, to);
+    testOutpus.push(mdStr);
+    return expect(mdStr).toBe(to);
+  });
+}
+
 function testRun() {
   if (true) {
     toStringTest(mdb.t`# Not a heading`, "\\# Not a heading", (exp, to) => exp.toBe(to));
@@ -530,6 +539,83 @@ Dude`),
     toStringTest(table, tableResult, (exp, to) => exp.toBe(to));
     toStringTest(mdb.table(header).push(...rows), tableResult, (exp, to) => exp.toBe(to));
   }
+
+  debugToStringTest(mdb.t`hello`, `<text>hello</text>`);
+  debugToStringTest(mdb.b`hello`, `<bold>hello</bold>`);
+  debugToStringTest(
+    mdb.footnote(mdb.p`note`),
+    `
+<footnote>
+  <paragraph>note</paragraph>
+</footnote>
+`
+  );
+  debugToStringTest(mdb.definition("name", mdb.t`explanation`), `\n<definition key="name"><text>explanation</text></definition>\n`);
+  debugToStringTest(mdb.h`header`, `\n<heading>header</heading>\n`);
+  debugToStringTest(mdb.blockquote(mdb.h`header`), `\n<blockQuote>\n  <heading>header</heading>\n</blockQuote>\n`);
+  debugToStringTest(mdb.emoji`hello`, `<emoji>hello</emoji>`);
+  debugToStringTest(mdb.hr(), `\n<hr></hr>\n`);
+  debugToStringTest(mdb.code`hello`, `<code>hello</code>`);
+  debugToStringTest(mdb.url`c:\\hello`, `<url>c:\\hello</url>`);
+  debugToStringTest(mdb.footnote`hello`.ref, `<footnoteReference>...refId...</footnoteReference>`);
+  debugToStringTest(
+    mdb.list(mdb.t`hello`, mdb.task`hello`, mdb.p`hello`, mdb.p`hello`),
+    `
+<list>
+  <item><text>hello</text></item>
+  
+  <item><task>hello</task></item>
+  
+  <non-item>
+    <paragraph>hello</paragraph>
+  </non-item>
+  
+  <non-item>
+    <paragraph>hello</paragraph>
+  </non-item>
+</list>
+`
+  );
+  debugToStringTest(
+    mdb.section(mdb.h`hello`, mdb.p`section`),
+    `
+<section>
+  <heading>hello</heading>
+  <paragraph>section</paragraph>
+</section>
+`
+  );
+  debugToStringTest(
+    mdb.section(null, mdb.t`no heading`),
+    `
+<section>
+  <no-heading />
+  <paragraph><text>no heading</text></paragraph>
+</section>
+`
+  );
+  debugToStringTest(mdb.raw`rraaww`, `<raw><rawContent>rraaww</rawContent></raw>`);
+  debugToStringTest(mdb.codeblock`hello`, `\n<codeblock>hello</codeblock>\n`);
+  debugToStringTest(
+    mdb.link(mdb.i`hello`, "http://localhost", "Localhost"),
+    `<link href="http://localhost" title="Localhost"><italic>hello</italic></link>`
+  );
+  debugToStringTest(
+    mdb.link(mdb.i`hello`, mdb.h`target target target target`, "Localhost"),
+    `<link target="<heading>target target target ta..." title="Localhost"><italic>hello</italic></link>`
+  );
+  debugToStringTest(mdb.linkUrl("http://localhost/dup"), `<linkUrl href="http://localhost/dup"></linkUrl>`);
+  debugToStringTest(
+    mdb.table([mdb.th("Head")], ["Body", "Body2"], ["Body2.1"]),
+    `
+<table>
+  <header><th>Head</th></header>
+  <tableRow><td>Body</td><td>Body2</td></tableRow>
+  <tableRow><td>Body2.1</td></tableRow>
+</table>
+`
+  );
+
   test("Markdown outputs", () => {
     console.log(testOutpus.join("\n\n"));
   });
