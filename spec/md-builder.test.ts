@@ -467,9 +467,9 @@ Dude`),
   }
   toStringTest(
     mdb
-      .section(null, "string", 5, null, mdb.t`inline`, mdb.p`paragraph`, mdb.raw`- raw`)
+      .section(null, mdb.t`string`, mdb.t`${5}`, null, mdb.t`inline`, mdb.p`paragraph`, mdb.raw`- raw`, () => mdb.p`lambda paragraph`)
       .push(mdb.url("noreply@noreply.com"), null, mdb.raw`\n- raw`),
-    "\nstring\n\n5\n\ninline\n\nparagraph\n\n- raw\n\n<noreply@noreply.com>\n\n- raw\n",
+    "\nstring\n\n5\n\ninline\n\nparagraph\n\n- raw\n\nlambda paragraph\n\n<noreply@noreply.com>\n\n- raw\n",
     (exp, to) => exp.toBe(to)
   );
   toStringTest(mdb.link("Title", mdb.h`Heading-without-id`), "Heading-without-id", (exp, to) => exp.toThrowError(to), undefined, "throw");
@@ -586,11 +586,12 @@ Dude`),
 `
   );
   debugToStringTest(
-    mdb.section(null, mdb.t`no heading`),
+    mdb.section(null, mdb.t`no heading`, () => mdb.t`no heading`),
     `
 <section>
   <no-heading />
-  <paragraph><text>no heading</text></paragraph>
+  <text>no heading</text>
+  <lambda>(context)=>...</lambda>
 </section>
 `
   );
