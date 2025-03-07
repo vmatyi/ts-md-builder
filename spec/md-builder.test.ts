@@ -473,6 +473,9 @@ Dude`),
     (exp, to) => exp.toBe(to)
   );
   toStringTest(mdb.link("Title", mdb.h`Heading-without-id`), "Heading-without-id", (exp, to) => exp.toThrowError(to), undefined, "throw");
+  toStringTest(mdb.link(mdb.link("Link-in-link", "never", "title"), "http://localhost/"), "[Link-in-link](http://localhost/)", (exp, to) =>
+    exp.toBe(to)
+  );
   toStringTest(mdb.definition(mdb.t`term`, mdb.t`definition of the term`), "\nterm\n: definition of the term\n", (exp, to) => exp.toBe(to));
   toStringTest(
     mdb.t`smart escape :smiley:smiley:SMILEY: :s :smiley smiley: :) :@ C:/ http://`,
